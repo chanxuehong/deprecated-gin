@@ -9,49 +9,6 @@ import (
 	"unicode"
 )
 
-// Param is a single URL parameter, consisting of a key and a value.
-type Param struct {
-	Key   string
-	Value string
-}
-
-// Params is a Param-slice, as returned by the router.
-// The slice is ordered, the first URL parameter is also the first slice value.
-// It is therefore safe to read values by the index.
-type Params []Param
-
-// ByName returns the value of the first Param which key matches the given name.
-// If no matching Param is found, an empty string is returned.
-func (ps Params) Get(name string) (string, bool) {
-	for _, entry := range ps {
-		if entry.Key == name {
-			return entry.Value, true
-		}
-	}
-	return "", false
-}
-
-func (ps Params) ByName(name string) (va string) {
-	va, _ = ps.Get(name)
-	return
-}
-
-type methodTree struct {
-	method string
-	root   *node
-}
-
-type methodTrees []methodTree
-
-func (trees methodTrees) get(method string) *node {
-	for _, tree := range trees {
-		if tree.method == method {
-			return tree.root
-		}
-	}
-	return nil
-}
-
 func min(a, b int) int {
 	if a <= b {
 		return a
@@ -76,9 +33,10 @@ func countParams(path string) uint8 {
 type nodeType uint8
 
 const (
-	static   nodeType = 0
-	param    nodeType = 1
-	catchAll nodeType = 2
+	static nodeType = iota // default
+	root
+	param
+	catchAll
 )
 
 type node struct {
@@ -88,7 +46,7 @@ type node struct {
 	maxParams uint8
 	indices   string
 	children  []*node
-	handlers  HandlersChain
+	handlers  HandlerChain
 	priority  uint32
 }
 
@@ -120,7 +78,7 @@ func (n *node) incrementChildPrio(pos int) int {
 
 // addRoute adds a node with the given handle to the path.
 // Not concurrency-safe!
-func (n *node) addRoute(path string, handlers HandlersChain) {
+func (n *node) addRoute(path string, handlers HandlerChain) {
 	fullPath := path
 	n.priority++
 	numParams := countParams(path)
@@ -230,7 +188,7 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 
 			} else if i == len(path) { // Make node a (in-path) leaf
 				if n.handlers != nil {
-					panic("handlers are already registered for path ''" + fullPath + "'")
+					panic("handlers are already registered for path '" + fullPath + "'")
 				}
 				n.handlers = handlers
 			}
@@ -238,10 +196,11 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 		}
 	} else { // Empty tree
 		n.insertChild(numParams, path, fullPath, handlers)
+		n.nType = root
 	}
 }
 
-func (n *node) insertChild(numParams uint8, path string, fullPath string, handlers HandlersChain) {
+func (n *node) insertChild(numParams uint8, path, fullPath string, handlers HandlerChain) {
 	var offset int // already handled bytes of the path
 
 	// find prefix until first wildcard (beginning with ':'' or '*'')
@@ -359,8 +318,8 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
 // made if a handle exists with an extra (without the) trailing slash for the
 // given path.
-func (n *node) getValue(path string, po Params) (handlers HandlersChain, p Params, tsr bool) {
-	p = po
+func (n *node) getValue(path string, psBuf Params) (handlers HandlerChain, ps Params, tsr bool) {
+	ps = psBuf[:0]
 walk: // Outer loop for walking the tree
 	for {
 		if len(path) > len(n.path) {
@@ -396,13 +355,13 @@ walk: // Outer loop for walking the tree
 					}
 
 					// save param value
-					if cap(p) < int(n.maxParams) {
-						p = make(Params, 0, n.maxParams)
+					if cap(ps) < int(n.maxParams) {
+						ps = make(Params, 0, n.maxParams)
 					}
-					i := len(p)
-					p = p[:i+1] // expand slice within preallocated capacity
-					p[i].Key = n.path[1:]
-					p[i].Value = path[:end]
+					i := len(ps)
+					ps = ps[:i+1] // expand slice within preallocated capacity
+					ps[i].Key = n.path[1:]
+					ps[i].Value = path[:end]
 
 					// we need to go deeper!
 					if end < len(path) {
@@ -430,13 +389,13 @@ walk: // Outer loop for walking the tree
 
 				case catchAll:
 					// save param value
-					if cap(p) < int(n.maxParams) {
-						p = make(Params, 0, n.maxParams)
+					if cap(ps) < int(n.maxParams) {
+						ps = make(Params, 0, n.maxParams)
 					}
-					i := len(p)
-					p = p[:i+1] // expand slice within preallocated capacity
-					p[i].Key = n.path[2:]
-					p[i].Value = path
+					i := len(ps)
+					ps = ps[:i+1] // expand slice within preallocated capacity
+					ps[i].Key = n.path[2:]
+					ps[i].Value = path
 
 					handlers = n.handlers
 					return
@@ -449,6 +408,11 @@ walk: // Outer loop for walking the tree
 			// We should have reached the node containing the handle.
 			// Check if this node has a handle registered.
 			if handlers = n.handlers; handlers != nil {
+				return
+			}
+
+			if path == "/" && n.wildChild && n.nType != root {
+				tsr = true
 				return
 			}
 

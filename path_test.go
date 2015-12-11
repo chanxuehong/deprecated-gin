@@ -8,8 +8,6 @@ package gin
 import (
 	"runtime"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 var cleanTests = []struct {
@@ -67,8 +65,12 @@ var cleanTests = []struct {
 
 func TestPathClean(t *testing.T) {
 	for _, test := range cleanTests {
-		assert.Equal(t, cleanPath(test.path), test.result)
-		assert.Equal(t, cleanPath(test.result), test.result)
+		if s := pathClean(test.path); s != test.result {
+			t.Errorf("pathClean(%q) = %q, want %q", test.path, s, test.result)
+		}
+		if s := pathClean(test.result); s != test.result {
+			t.Errorf("pathClean(%q) = %q, want %q", test.result, s, test.result)
+		}
 	}
 }
 
@@ -82,7 +84,9 @@ func TestPathCleanMallocs(t *testing.T) {
 	}
 
 	for _, test := range cleanTests {
-		allocs := testing.AllocsPerRun(100, func() { cleanPath(test.result) })
-		assert.EqualValues(t, allocs, 0)
+		allocs := testing.AllocsPerRun(100, func() { pathClean(test.result) })
+		if allocs > 0 {
+			t.Errorf("pathClean(%q): %v allocs, want zero", test.result, allocs)
+		}
 	}
 }

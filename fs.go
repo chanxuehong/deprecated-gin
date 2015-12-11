@@ -1,3 +1,7 @@
+// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Use of this source code is governed by a MIT style
+// license that can be found in the LICENSE file.
+
 package gin
 
 import (
@@ -5,38 +9,21 @@ import (
 	"os"
 )
 
-type (
-	onlyfilesFS struct {
-		fs http.FileSystem
-	}
-	neuteredReaddirFile struct {
-		http.File
-	}
-)
+var _ http.FileSystem = Dir("")
 
-// Dir returns a http.Filesystem that can be used by http.FileServer(). It is used interally
-// in router.Static().
-// if listDirectory == true, then it works the same as http.Dir() otherwise it returns
-// a filesystem that prevents http.FileServer() to list the directory files.
-func Dir(root string, listDirectory bool) http.FileSystem {
-	fs := http.Dir(root)
-	if listDirectory {
-		return fs
-	}
-	return &onlyfilesFS{fs}
-}
+// Dir like http.Dir but the http.File returned by Dir.Open() does not list the directory files,
+// so we can pass Dir to http.FileServer() to prevent it lists the directory files.
+type Dir string
 
-// Conforms to http.Filesystem
-func (fs onlyfilesFS) Open(name string) (http.File, error) {
-	f, err := fs.fs.Open(name)
+func (d Dir) Open(name string) (http.File, error) {
+	file, err := http.Dir(d).Open(name)
 	if err != nil {
 		return nil, err
 	}
-	return neuteredReaddirFile{f}, nil
+	return neuteredReaddirFile{file}, nil
 }
 
+type neuteredReaddirFile struct{ http.File }
+
 // Overrides the http.File default implementation
-func (f neuteredReaddirFile) Readdir(count int) ([]os.FileInfo, error) {
-	// this disables directory listing
-	return nil, nil
-}
+func (neuteredReaddirFile) Readdir(count int) ([]os.FileInfo, error) { return nil, nil }
