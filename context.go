@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	_filepath "path/filepath"
@@ -156,10 +157,10 @@ func (ctx *Context) MustGet(key string) interface{} {
 	if value, exists := ctx.Get(key); exists {
 		return value
 	}
-	panic(`kvs: "` + key + `" does not exist`)
+	panic(`[kvs] key "` + key + `" does not exist`)
 }
 
-// =================================request=====================================
+// ================================ request ====================================
 
 // Param is a shortcut for ctx.PathParams.ByName(key).
 func (ctx *Context) Param(key string) string {
@@ -240,36 +241,24 @@ func (ctx *Context) BindXML(obj interface{}) (err error) {
 	return ctx.BindWith(obj, binder.XML)
 }
 
-// =================================response====================================
+// ================================ response ===================================
 
 // Redirect redirects the request using http.Redirect with status code.
 func (ctx *Context) Redirect(code int, location string) {
 	http.Redirect(ctx.ResponseWriter, ctx.Request, location, code)
 }
 
-// Write sends a byte-slice response with status code.
-// It sets the Content-Type as "text/plain; charset=utf-8" if contentType is empty.
-func (ctx *Context) Write(code int, contentType string, data []byte) (err error) {
-	if contentType == "" {
-		contentType = "text/plain; charset=utf-8"
-	}
+// WriteString writes the given string into the response body.
+// It sets the Content-Type as "text/plain; charset=utf-8".
+func (ctx *Context) WriteString(code int, format string, values ...interface{}) (err error) {
 	w := ctx.ResponseWriter
-	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(code)
-	_, err = w.Write(data)
-	return
-}
-
-// WriteString sends a string response with status code.
-// It sets the Content-Type as "text/plain; charset=utf-8" if contentType is empty.
-func (ctx *Context) WriteString(code int, contentType string, str string) (err error) {
-	if contentType == "" {
-		contentType = "text/plain; charset=utf-8"
+	if len(values) > 0 {
+		_, err = fmt.Fprintf(w, format, values...)
+	} else {
+		_, err = w.WriteString(format)
 	}
-	w := ctx.ResponseWriter
-	w.Header().Set("Content-Type", contentType)
-	w.WriteHeader(code)
-	_, err = w.WriteString(str)
 	return
 }
 
@@ -286,13 +275,13 @@ func (ctx *Context) JSON(code int, obj interface{}) (err error) {
 // It sets the Content-Type as "application/json; charset=utf-8".
 func (ctx *Context) JSONIndent(code int, obj interface{}, prefix string, indent string) (err error) {
 	w := ctx.ResponseWriter
-	bs, err := json.MarshalIndent(obj, prefix, indent)
+	jsonBytes, err := json.MarshalIndent(obj, prefix, indent)
 	if err != nil {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(code)
-	_, err = w.Write(bs)
+	_, err = w.Write(jsonBytes)
 	return
 }
 
@@ -339,7 +328,8 @@ func (ctx *Context) Attachment(filepath, filename string) (err error) {
 		}
 	}
 	ContentDisposition := `attachment;filename="` + url.QueryEscape(filename) + `"`
-	ctx.ResponseWriter.Header().Set("Content-Disposition", ContentDisposition)
-	http.ServeFile(ctx.ResponseWriter, ctx.Request, filepath)
+	w := ctx.ResponseWriter
+	w.Header().Set("Content-Disposition", ContentDisposition)
+	http.ServeFile(w, ctx.Request, filepath)
 	return
 }
