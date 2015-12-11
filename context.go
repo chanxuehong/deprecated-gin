@@ -35,7 +35,9 @@ const (
 	MIMETextPlainCharsetUTF8             = MIMETextPlain + "; charset=utf-8"
 	MIMETextHTMLCharsetUTF8              = MIMETextHTML + "; charset=utf-8"
 	MIMETextXMLCharsetUTF8               = MIMETextXML + "; charset=utf-8"
+)
 
+const (
 	// Headers
 	HeaderAcceptEncoding     = "Accept-Encoding"
 	HeaderAuthorization      = "Authorization"
@@ -248,9 +250,9 @@ func (ctx *Context) Redirect(code int, location string) {
 	http.Redirect(ctx.ResponseWriter, ctx.Request, location, code)
 }
 
-// WriteString writes the given string into the response body.
+// String writes the given string into the response body.
 // It sets the Content-Type as "text/plain; charset=utf-8".
-func (ctx *Context) WriteString(code int, format string, values ...interface{}) (err error) {
+func (ctx *Context) String(code int, format string, values ...interface{}) (err error) {
 	w := ctx.ResponseWriter
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(code)

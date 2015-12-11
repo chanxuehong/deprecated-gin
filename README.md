@@ -80,7 +80,7 @@ import (
 )
 
 func handler(ctx *gin.Context) {
-	ctx.WriteString(200, ctx.Request.Method)
+	ctx.String(200, ctx.Request.Method)
 }
 
 func main() {
@@ -117,7 +117,7 @@ func main() {
 	// This handler will match /user/john but will not match neither /user/ or /user
 	router.Get("/user/:name", func(ctx *gin.Context) {
 		name := ctx.Param("name")
-		ctx.WriteString(http.StatusOK, "Hello %s", name)
+		ctx.String(http.StatusOK, "Hello %s", name)
 	})
 
 	// However, this one will match /user/john/ and also /user/john/send
@@ -126,7 +126,7 @@ func main() {
 		name := ctx.Param("name")
 		action := ctx.Param("action")
 		message := name + " is " + action
-		ctx.WriteString(http.StatusOK, message)
+		ctx.String(http.StatusOK, message)
 	})
 
 	router.Run(":8080")
@@ -154,7 +154,7 @@ func main() {
 		firstname := ctx.DefaultQuery("firstname", "Guest")
 		lastname := ctx.Query("lastname") // shortcut for c.Request.URL.Query().Get("lastname")
 
-		ctx.WriteString(http.StatusOK, "Hello %s %s", firstname, lastname)
+		ctx.String(http.StatusOK, "Hello %s %s", firstname, lastname)
 	})
 
 	router.Run(":8080")
