@@ -362,6 +362,7 @@ type Login struct {
 
 func main() {
 	router := gin.New()
+	router.DefaultValidator(gin.DefaultValidator) // it not set, it does not validate the struct.
 
 	// Example for binding JSON ({"user": "manu", "password": "123"})
 	router.Post("/loginJSON", func(ctx *gin.Context) {
