@@ -65,6 +65,9 @@ func (group *RouteGroup) Handle(httpMethod, relativePath string, handlers ...Han
 }
 
 func (group *RouteGroup) handle(httpMethod, relativePath string, handlers HandlerChain) {
+	if len(handlers) == 0 {
+		panic("there must be at least one handler")
+	}
 	absolutePath := pathJoin(group.basePath, relativePath)
 	handlers = combineHandlerChain(group.middlewares, handlers)
 	group.engine.addRoute(httpMethod, absolutePath, handlers)
@@ -134,8 +137,15 @@ func (group *RouteGroup) StaticFile(relativePath, filepath string) {
 }
 
 // StaticRoot like nginx root location but relativePath must be ended with '/' if not empty.
-//   group.StaticRoot("/abc/", http.Dir("/home/root/"))
-//   group.StaticRoot("/abc/", gin.Dir("/home/root/"))
+//   group.StaticRoot("/abc/", http.Dir("/home/root"))
+//   group.StaticRoot("/abc/", gin.Dir("/home/root"))
+//
+//   is like this in nginx:
+//
+//   location ^~ /abc/ {
+//       root   /home/root;
+//       index  index.html;
+//   }
 func (group *RouteGroup) StaticRoot(relativePath string, root http.FileSystem) {
 	if length := len(relativePath); length > 0 && relativePath[length-1] != '/' {
 		panic("path must be ended with '/' when serving a static root")
@@ -154,6 +164,13 @@ func (group *RouteGroup) StaticRoot(relativePath string, root http.FileSystem) {
 // StaticAlias like nginx alias location(also relativePath must be ended with '/' if not empty).
 //   group.StaticAlias("/abc/", http.Dir("/home/root/abc/"))
 //   group.StaticAlias("/abc/", gin.Dir("/home/root/abc/"))
+//
+//   is like this in nginx:
+//
+//   location ^~ /abc/ {
+//       alias  /home/root/abc/;
+//       index  index.html;
+//   }
 func (group *RouteGroup) StaticAlias(relativePath string, dir http.FileSystem) {
 	if length := len(relativePath); length > 0 {
 		if relativePath[length-1] != '/' {

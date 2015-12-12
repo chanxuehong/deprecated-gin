@@ -42,8 +42,8 @@ type Engine struct {
 
 	noRoute     HandlerChain
 	noMethod    HandlerChain
-	allNoRoute  HandlerChain // always == combineHandlerChain(middlewares, noRoute)
-	allNoMethod HandlerChain // always == combineHandlerChain(middlewares, noMethod)
+	allNoRoute  HandlerChain // always == combineHandlerChain(middlewares, noRoute) if noRoute is not empty, otherwise is nil.
+	allNoMethod HandlerChain // always == combineHandlerChain(middlewares, noMethod) if noMethod is not empty, otherwise is nil.
 	trees       trees        // point treeBuffer
 	treeBuffer  [len(httpMethods) * 2]tree
 
@@ -102,10 +102,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlerChain) {
 	if path == "" || path[0] != '/' {
 		panic("path must begin with '/'")
 	}
-	if len(handlers) == 0 {
-		panic("there must be at least one handler")
-	}
-	// each handler in handlers is valid, see function combineHandlerChain.
+	// handlers always valid, see RouteGroup.handle() and combineHandlerChain()
 
 	engine.startChecker.check() // check if engine has been started.
 	debugPrintRoute(method, path, handlers)
@@ -135,6 +132,7 @@ func (engine *Engine) Use(middleware ...HandlerFunc) {
 }
 
 // NoRoute set handlers for NoRoute. It return a 404 code by default.
+// Engine.NoRoute() removes all no-route handlers.
 func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
 	engine.startChecker.check()
 	engine.noRoute = handlers
@@ -142,10 +140,15 @@ func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
 }
 
 func (engine *Engine) rebuild404Handlers() {
+	if len(engine.noRoute) == 0 {
+		engine.allNoRoute = nil
+		return
+	}
 	engine.allNoRoute = combineHandlerChain(engine.middlewares, engine.noRoute)
 }
 
-// NoRoute set handlers for NoMethod. It return a 405 code by default.
+// NoMethod set handlers for NoMethod. It return a 405 code by default.
+// Engine.NoMethod() removes all no-method handlers.
 func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
 	engine.startChecker.check()
 	engine.noMethod = handlers
@@ -153,6 +156,10 @@ func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
 }
 
 func (engine *Engine) rebuild405Handlers() {
+	if len(engine.noMethod) == 0 {
+		engine.allNoMethod = nil
+		return
+	}
 	engine.allNoMethod = combineHandlerChain(engine.middlewares, engine.noMethod)
 }
 
