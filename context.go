@@ -205,21 +205,34 @@ func (ctx *Context) DefaultFormValue(key, defaultValue string) string {
 	return defaultValue
 }
 
-// PostFormValue is a shortcut for ctx.Request.PostFormValue(key)
-func (ctx *Context) PostFormValue(key string) string {
-	return ctx.Request.PostFormValue(key)
+// PostFormValue like ctx.Request.PostFormValue(key) but it also gets value from ctx.Request.MultipartForm.Value.
+func (ctx *Context) PostFormValue(key string) (value string) {
+	value, _ = ctx.postFormValue(key)
+	return
 }
 
 // DefaultPostFormValue like PostFormValue if key matched, otherwise it returns defaultValue.
 func (ctx *Context) DefaultPostFormValue(key, defaultValue string) string {
-	req := ctx.Request
-	if req.PostForm == nil {
-		req.ParseMultipartForm(32 << 20)
-	}
-	if vs := req.PostForm[key]; len(vs) > 0 {
-		return vs[0]
+	if value, exists := ctx.postFormValue(key); exists {
+		return value
 	}
 	return defaultValue
+}
+
+func (ctx *Context) postFormValue(key string) (value string, exists bool) {
+	req := ctx.Request
+	if req.PostForm == nil || req.MultipartForm == nil {
+		req.ParseMultipartForm(32 << 20) // 32 MB
+	}
+	if vs := req.PostForm[key]; len(vs) > 0 {
+		return vs[0], true
+	}
+	if req.MultipartForm != nil && req.MultipartForm.Value != nil {
+		if vs := req.MultipartForm.Value[key]; len(vs) > 0 {
+			return vs[0], true
+		}
+	}
+	return
 }
 
 // BindWith binds the passed struct pointer using the specified Binder.
