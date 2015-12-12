@@ -183,7 +183,7 @@ func (ctx *Context) MustGet(key string) interface{} {
 // ================================ request ====================================
 
 // Cookie is a shortcut for ctx.Request.Cookie(name).
-// It returns the named cookie provided in the request or ErrNoCookie if not found.
+// It returns the named cookie provided in the request or http.ErrNoCookie if not found.
 func (ctx *Context) Cookie(name string) (*http.Cookie, error) {
 	return ctx.Request.Cookie(name)
 }
