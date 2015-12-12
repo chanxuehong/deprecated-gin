@@ -199,6 +199,9 @@ func pathJoin(basePath, relativePath string) string {
 }
 
 func combineHandlerChain(middlewares, handlers HandlerChain) HandlerChain {
+	if len(handlers) == 0 {
+		return middlewares
+	}
 	// middlewares is canonical, since it was returned by combineHandlerChain.
 	for _, h := range handlers {
 		if h == nil {
