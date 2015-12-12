@@ -67,14 +67,15 @@ type Context struct {
 	pathParamsBuffer [256]Param // Context.PathParams points to this
 	PathParams       Params
 	QueryParams      url.Values
-	handlers         HandlerChain
-	handlerIndex     int
 
 	// Validator will validate object when binding if not nil.
 	// By default the Validator is nil, you can set default Validator using
 	//     Engine.DefaultValidator()
 	// also you can change this in handlers.
 	Validator StructValidator
+
+	handlers     HandlerChain
+	handlerIndex int
 
 	kvs map[string]interface{}
 }
@@ -84,27 +85,27 @@ func (ctx *Context) reset(validator StructValidator) {
 	ctx.Request = nil
 	ctx.PathParams = ctx.pathParamsBuffer[:0]
 	ctx.QueryParams = nil
+	ctx.Validator = validator
 	ctx.handlers = nil
 	ctx.handlerIndex = -1
-	ctx.Validator = validator
 	ctx.kvs = nil
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
 // This have to be used when the context has to be passed to a goroutine.
 func (ctx *Context) Copy() *Context {
-	var params Params
+	var pathParams Params
 	if len(ctx.PathParams) > 0 {
-		params = append(params, ctx.PathParams...)
+		pathParams = append(pathParams, ctx.PathParams...)
 	}
 	return &Context{
 		ResponseWriter: nil,
 		Request:        ctx.Request,
-		PathParams:     params,
+		PathParams:     pathParams,
 		QueryParams:    ctx.QueryParams,
+		Validator:      ctx.Validator,
 		handlers:       nil,
 		handlerIndex:   abortHandlerIndex,
-		Validator:      ctx.Validator,
 		kvs:            ctx.kvs,
 	}
 }
