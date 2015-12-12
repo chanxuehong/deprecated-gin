@@ -165,9 +165,14 @@ func (ctx *Context) MustGet(key string) interface{} {
 
 // ================================ request ====================================
 
-// Param is a shortcut for ctx.PathParams.ByName(key).
-func (ctx *Context) Param(key string) string {
-	return ctx.PathParams.ByName(key)
+// Param is a shortcut for ctx.PathParams.ByName(name).
+func (ctx *Context) Param(name string) string {
+	return ctx.PathParams.ByName(name)
+}
+
+// ParamByIndex is a shortcut for ctx.PathParams.ByIndex(index).
+func (ctx *Context) ParamByIndex(index int) string {
+	return ctx.PathParams.ByIndex(index)
 }
 
 // Query returns the url query values by name.
@@ -178,62 +183,62 @@ func (ctx *Context) Query(name string) string {
 	return ctx.QueryParams.Get(name)
 }
 
-// DefaultQuery like Query if key matched, otherwise it returns defaultValue.
-func (ctx *Context) DefaultQuery(key, defaultValue string) string {
+// DefaultQuery like Query if name matched, otherwise it returns defaultValue.
+func (ctx *Context) DefaultQuery(name, defaultValue string) string {
 	if ctx.QueryParams == nil {
 		ctx.QueryParams = ctx.Request.URL.Query()
 	}
-	if vs := ctx.QueryParams[key]; len(vs) > 0 {
+	if vs := ctx.QueryParams[name]; len(vs) > 0 {
 		return vs[0]
 	}
 	return defaultValue
 }
 
-// FormValue is a shortcut for ctx.Request.FormValue(key)
-func (ctx *Context) FormValue(key string) string {
-	return ctx.Request.FormValue(key)
+// FormValue is a shortcut for ctx.Request.FormValue(name)
+func (ctx *Context) FormValue(name string) string {
+	return ctx.Request.FormValue(name)
 }
 
-// DefaultFormValue like FormValue if key matched, otherwise it returns defaultValue.
-func (ctx *Context) DefaultFormValue(key, defaultValue string) string {
+// DefaultFormValue like FormValue if name matched, otherwise it returns defaultValue.
+func (ctx *Context) DefaultFormValue(name, defaultValue string) string {
 	req := ctx.Request
 	if req.Form == nil {
 		req.ParseMultipartForm(32 << 20)
 	}
-	if vs := req.Form[key]; len(vs) > 0 {
+	if vs := req.Form[name]; len(vs) > 0 {
 		return vs[0]
 	}
 	return defaultValue
 }
 
-// PostFormValue like ctx.Request.PostFormValue(key) but it also gets value from ctx.Request.MultipartForm.Value.
-func (ctx *Context) PostFormValue(key string) (value string) {
-	value, _ = ctx.postFormValue(key)
+// PostFormValue like ctx.Request.PostFormValue(name) but it also gets value from ctx.Request.MultipartForm.Value.
+func (ctx *Context) PostFormValue(name string) (value string) {
+	value, _ = ctx.postFormValue(name)
 	return
 }
 
-// DefaultPostFormValue like PostFormValue if key matched, otherwise it returns defaultValue.
-func (ctx *Context) DefaultPostFormValue(key, defaultValue string) (value string) {
+// DefaultPostFormValue like PostFormValue if name matched, otherwise it returns defaultValue.
+func (ctx *Context) DefaultPostFormValue(name, defaultValue string) (value string) {
 	var exists bool
-	if value, exists = ctx.postFormValue(key); exists {
+	if value, exists = ctx.postFormValue(name); exists {
 		return
 	}
 	return defaultValue
 }
 
-func (ctx *Context) postFormValue(key string) (value string, exists bool) {
+func (ctx *Context) postFormValue(name string) (value string, exists bool) {
 	req := ctx.Request
 	if req.PostForm == nil {
 		req.ParseForm()
 	}
-	if vs := req.PostForm[key]; len(vs) > 0 {
+	if vs := req.PostForm[name]; len(vs) > 0 {
 		return vs[0], true
 	}
 	if req.MultipartForm == nil {
 		req.ParseMultipartForm(32 << 20) // 32 MB
 	}
 	if req.MultipartForm != nil && req.MultipartForm.Value != nil {
-		if vs := req.MultipartForm.Value[key]; len(vs) > 0 {
+		if vs := req.MultipartForm.Value[name]; len(vs) > 0 {
 			return vs[0], true
 		}
 	}
