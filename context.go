@@ -203,7 +203,7 @@ func (ctx *Context) FormValue(name string) string {
 func (ctx *Context) DefaultFormValue(name, defaultValue string) string {
 	req := ctx.Request
 	if req.Form == nil {
-		req.ParseMultipartForm(32 << 20)
+		req.ParseMultipartForm(32 << 20) // 32 MB
 	}
 	if vs := req.Form[name]; len(vs) > 0 {
 		return vs[0]
@@ -229,13 +229,10 @@ func (ctx *Context) DefaultPostFormValue(name, defaultValue string) (value strin
 func (ctx *Context) postFormValue(name string) (value string, exists bool) {
 	req := ctx.Request
 	if req.PostForm == nil {
-		req.ParseForm()
+		req.ParseMultipartForm(32 << 20) // 32 MB
 	}
 	if vs := req.PostForm[name]; len(vs) > 0 {
 		return vs[0], true
-	}
-	if req.MultipartForm == nil {
-		req.ParseMultipartForm(32 << 20) // 32 MB
 	}
 	if req.MultipartForm != nil && req.MultipartForm.Value != nil {
 		if vs := req.MultipartForm.Value[name]; len(vs) > 0 {
