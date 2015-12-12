@@ -110,6 +110,17 @@ func (ctx *Context) Copy() *Context {
 	}
 }
 
+// HandlerName returns the main handle's name.
+// For example if the handler is "handleGetUsers()", this function will return "main.handleGetUsers"
+func (ctx *Context) HandlerName() string {
+	return nameOfFunction(ctx.handlers.last())
+}
+
+// IsAborted returns true if the currect context was aborted.
+func (ctx *Context) IsAborted() bool {
+	return ctx.handlerIndex >= abortHandlerIndex
+}
+
 // Abort stops the system to continue calling the pending handlers in the chain.
 // Let's say you have an authorization middleware that validates if the request is authorized
 // if the authorization fails (the password does not match). This method (Abort()) should be called
@@ -118,9 +129,19 @@ func (ctx *Context) Abort() {
 	ctx.handlerIndex = abortHandlerIndex
 }
 
-// IsAborted returns true if the currect context was aborted.
-func (ctx *Context) IsAborted() bool {
-	return ctx.handlerIndex >= abortHandlerIndex
+// AbortWithStatus writes the headers with the specified status code and calls `Abort()`.
+// For example, a failed attempt to authentificate a request could use: context.AbortWithStatus(401).
+func (ctx *Context) AbortWithStatus(code int) {
+	ctx.ResponseWriter.WriteHeader(code)
+	ctx.Abort()
+}
+
+// AbortWithError writes the status code and error message to response, then stops the chain.
+// The error message should be plain text.
+// This method calls `String()` internally, see Context.String() for more details.
+func (ctx *Context) AbortWithError(code int, format string, values ...interface{}) {
+	ctx.String(code, format, values...)
+	ctx.Abort()
 }
 
 // Next should be used only inside middleware.
@@ -134,11 +155,7 @@ func (ctx *Context) Next() {
 	}
 }
 
-// HandlerName returns the main handle's name.
-// For example if the handler is "handleGetUsers()", this function will return "main.handleGetUsers"
-func (ctx *Context) HandlerName() string {
-	return nameOfFunction(ctx.handlers.last())
-}
+// ================================== kvs ======================================
 
 // Set is used to store a new key/value pair exclusivelly for this context.
 func (ctx *Context) Set(key string, value interface{}) {
@@ -164,6 +181,12 @@ func (ctx *Context) MustGet(key string) interface{} {
 }
 
 // ================================ request ====================================
+
+// Cookie is a shortcut for ctx.Request.Cookie(name).
+// It returns the named cookie provided in the request or ErrNoCookie if not found.
+func (ctx *Context) Cookie(name string) (*http.Cookie, error) {
+	return ctx.Request.Cookie(name)
+}
 
 // Param is a shortcut for ctx.PathParams.ByName(name).
 func (ctx *Context) Param(name string) string {
@@ -242,6 +265,16 @@ func (ctx *Context) postFormValue(name string) (value string, exists bool) {
 	return
 }
 
+// BindJSON is a shortcut for ctx.BindWith(obj, binder.JSON).
+func (ctx *Context) BindJSON(obj interface{}) (err error) {
+	return ctx.BindWith(obj, binder.JSON)
+}
+
+// BindXML is a shortcut for ctx.BindWith(obj, binder.XML).
+func (ctx *Context) BindXML(obj interface{}) (err error) {
+	return ctx.BindWith(obj, binder.XML)
+}
+
 // BindWith binds the passed struct pointer using the specified Binder.
 func (ctx *Context) BindWith(obj interface{}, b binder.Binder) (err error) {
 	if err = b.Bind(ctx.Request, obj); err != nil {
@@ -253,17 +286,12 @@ func (ctx *Context) BindWith(obj interface{}, b binder.Binder) (err error) {
 	return
 }
 
-// BindJSON is a shortcut for ctx.BindWith(obj, binder.JSON).
-func (ctx *Context) BindJSON(obj interface{}) (err error) {
-	return ctx.BindWith(obj, binder.JSON)
-}
-
-// BindXML is a shortcut for ctx.BindWith(obj, binder.XML).
-func (ctx *Context) BindXML(obj interface{}) (err error) {
-	return ctx.BindWith(obj, binder.XML)
-}
-
 // ================================ response ===================================
+
+// SetCookie is a shortcut for http.SetCookie(ctx.ResponseWriter, cookie).
+func (ctx *Context) SetCookie(cookie *http.Cookie) {
+	http.SetCookie(ctx.ResponseWriter, cookie)
+}
 
 // Redirect redirects the request using http.Redirect with status code.
 func (ctx *Context) Redirect(code int, location string) {
@@ -275,6 +303,7 @@ func (ctx *Context) Redirect(code int, location string) {
 func (ctx *Context) String(code int, format string, values ...interface{}) (err error) {
 	w := ctx.ResponseWriter
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(code)
 	if len(values) > 0 {
 		_, err = fmt.Fprintf(w, format, values...)
