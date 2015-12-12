@@ -212,20 +212,24 @@ func (ctx *Context) PostFormValue(key string) (value string) {
 }
 
 // DefaultPostFormValue like PostFormValue if key matched, otherwise it returns defaultValue.
-func (ctx *Context) DefaultPostFormValue(key, defaultValue string) string {
-	if value, exists := ctx.postFormValue(key); exists {
-		return value
+func (ctx *Context) DefaultPostFormValue(key, defaultValue string) (value string) {
+	var exists bool
+	if value, exists = ctx.postFormValue(key); exists {
+		return
 	}
 	return defaultValue
 }
 
 func (ctx *Context) postFormValue(key string) (value string, exists bool) {
 	req := ctx.Request
-	if req.PostForm == nil || req.MultipartForm == nil {
-		req.ParseMultipartForm(32 << 20) // 32 MB
+	if req.PostForm == nil {
+		req.ParseForm()
 	}
 	if vs := req.PostForm[key]; len(vs) > 0 {
 		return vs[0], true
+	}
+	if req.MultipartForm == nil {
+		req.ParseMultipartForm(32 << 20) // 32 MB
 	}
 	if req.MultipartForm != nil && req.MultipartForm.Value != nil {
 		if vs := req.MultipartForm.Value[key]; len(vs) > 0 {
