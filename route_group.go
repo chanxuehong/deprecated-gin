@@ -144,7 +144,6 @@ func (group *RouteGroup) StaticFile(relativePath, filepath string) {
 //
 //   location ^~ /abc/ {
 //       root   /home/root;
-//       index  index.html;
 //   }
 func (group *RouteGroup) StaticRoot(relativePath string, root http.FileSystem) {
 	if length := len(relativePath); length > 0 && relativePath[length-1] != '/' {
@@ -169,7 +168,6 @@ func (group *RouteGroup) StaticRoot(relativePath string, root http.FileSystem) {
 //
 //   location ^~ /abc/ {
 //       alias  /home/root/abc/;
-//       index  index.html;
 //   }
 func (group *RouteGroup) StaticAlias(relativePath string, dir http.FileSystem) {
 	if length := len(relativePath); length > 0 {
