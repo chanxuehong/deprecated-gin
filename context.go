@@ -148,11 +148,9 @@ func (ctx *Context) AbortWithError(code int, format string, values ...interface{
 // It executes the pending handlers in the chain inside the calling handler.
 func (ctx *Context) Next() {
 	for ctx.handlerIndex++; ctx.handlerIndex < len(ctx.handlers); ctx.handlerIndex++ {
-		handler := ctx.handlers[ctx.handlerIndex]
-		if handler != nil {
-			handler(ctx)
-		}
+		ctx.handlers[ctx.handlerIndex](ctx)
 	}
+	ctx.handlerIndex--
 }
 
 // ================================== kvs ======================================
@@ -172,7 +170,7 @@ func (ctx *Context) Get(key string) (value interface{}, exists bool) {
 	return
 }
 
-// MustGet Returns the value for the given key if it exists, otherwise it panics.
+// MustGet returns the value for the given key if it exists, otherwise it panics.
 func (ctx *Context) MustGet(key string) interface{} {
 	if value, exists := ctx.Get(key); exists {
 		return value
