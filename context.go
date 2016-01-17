@@ -147,10 +147,14 @@ func (ctx *Context) AbortWithError(code int, format string, values ...interface{
 // Next should be used only inside middleware.
 // It executes the pending handlers in the chain inside the calling handler.
 func (ctx *Context) Next() {
-	for ctx.handlerIndex++; ctx.handlerIndex < len(ctx.handlers); ctx.handlerIndex++ {
+	for {
+		ctx.handlerIndex++
+		if ctx.handlerIndex >= len(ctx.handlers) {
+			ctx.handlerIndex--
+			break
+		}
 		ctx.handlers[ctx.handlerIndex](ctx)
 	}
-	ctx.handlerIndex--
 }
 
 // ================================== kvs ======================================
