@@ -35,7 +35,7 @@ var _ http.Handler = (*Engine)(nil)
 //  Please serially sets Engine(normally in 'init' or 'main' goroutine).
 type Engine struct {
 	RouteGroup
-	startChecker startChecker
+	startedChecker startedChecker
 
 	contextPool      sync.Pool
 	defaultValidator StructValidator // Validate object when binding if set.
@@ -104,7 +104,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlerChain) {
 	}
 	// handlers always valid, see RouteGroup.handle() and combineHandlerChain()
 
-	engine.startChecker.check() // check if engine has been started.
+	engine.startedChecker.check() // check if engine has been started.
 	debugPrintRoute(method, path, handlers)
 
 	root := engine.trees.getTree(method)
@@ -125,7 +125,7 @@ func (engine *Engine) Routes() (routes []Route) {
 // included in the handler chain for every single request. Even 404, 405, static files...
 // For example, this is the right place for a logger or error management middleware.
 func (engine *Engine) Use(middleware ...HandlerFunc) {
-	engine.startChecker.check()
+	engine.startedChecker.check()
 	engine.RouteGroup.Use(middleware...)
 	engine.rebuild404Handlers()
 	engine.rebuild405Handlers()
@@ -134,7 +134,7 @@ func (engine *Engine) Use(middleware ...HandlerFunc) {
 // NoRoute set handlers for NoRoute. It return a 404 code by default.
 // Engine.NoRoute() removes all no-route handlers.
 func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
-	engine.startChecker.check()
+	engine.startedChecker.check()
 	engine.noRoute = handlers
 	engine.rebuild404Handlers()
 }
@@ -150,7 +150,7 @@ func (engine *Engine) rebuild404Handlers() {
 // NoMethod set handlers for NoMethod. It return a 405 code by default.
 // Engine.NoMethod() removes all no-method handlers.
 func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
-	engine.startChecker.check()
+	engine.startedChecker.check()
 	engine.noMethod = handlers
 	engine.rebuild405Handlers()
 }
@@ -171,7 +171,7 @@ func (engine *Engine) rebuild405Handlers() {
 //
 // Default is true.
 func (engine *Engine) RedirectTrailingSlash(b bool) {
-	engine.startChecker.check()
+	engine.startedChecker.check()
 	engine.redirectTrailingSlash = b
 }
 
@@ -187,7 +187,7 @@ func (engine *Engine) RedirectTrailingSlash(b bool) {
 //
 // Default is false.
 func (engine *Engine) RedirectFixedPath(b bool) {
-	engine.startChecker.check()
+	engine.startedChecker.check()
 	engine.redirectFixedPath = b
 }
 
@@ -200,13 +200,13 @@ func (engine *Engine) RedirectFixedPath(b bool) {
 //
 // Default is false.
 func (engine *Engine) HandleMethodNotAllowed(b bool) {
-	engine.startChecker.check()
+	engine.startedChecker.check()
 	engine.handleMethodNotAllowed = b
 }
 
 // DefaultValidator sets the default Validator to validate object when binding.
 func (engine *Engine) DefaultValidator(v StructValidator) {
-	engine.startChecker.check()
+	engine.startedChecker.check()
 	engine.defaultValidator = v
 }
 
@@ -216,7 +216,7 @@ func (engine *Engine) DefaultValidator(v StructValidator) {
 // It is a shortcut for http.ListenAndServe(addr, engine)
 // Note: this method will block the calling goroutine undefinitelly unless an error happens.
 func (engine *Engine) Run(addr string) (err error) {
-	engine.startChecker.start()
+	engine.startedChecker.start()
 	defer func() { debugPrintError(err) }()
 
 	debugPrint("Listening and serving HTTP on %s\r\n", addr)
@@ -227,7 +227,7 @@ func (engine *Engine) Run(addr string) (err error) {
 // It is a shortcut for http.ListenAndServeTLS(addr, certFile, keyFile, engine)
 // Note: this method will block the calling goroutine undefinitelly unless an error happens.
 func (engine *Engine) RunTLS(addr string, certFile string, keyFile string) (err error) {
-	engine.startChecker.start()
+	engine.startedChecker.start()
 	defer func() { debugPrintError(err) }()
 
 	debugPrint("Listening and serving HTTPS on %s\r\n", addr)
@@ -236,7 +236,7 @@ func (engine *Engine) RunTLS(addr string, certFile string, keyFile string) (err 
 
 // ServeHTTP implements the http.Handler interface.
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	engine.startChecker.start()
+	engine.startedChecker.start()
 	ctx := engine.contextPool.Get().(*Context)
 	defer engine.contextPool.Put(ctx)
 
