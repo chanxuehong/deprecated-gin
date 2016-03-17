@@ -214,7 +214,7 @@ func (engine *Engine) DefaultValidator(v StructValidator) {
 
 // Run attaches the engine to a http.Server and starts listening and serving HTTP requests.
 // It is a shortcut for http.ListenAndServe(addr, engine)
-// Note: this method will block the calling goroutine undefinitelly unless an error happens.
+// Note: this method will block the calling goroutine indefinitely unless an error happens.
 func (engine *Engine) Run(addr string) (err error) {
 	engine.startedChecker.start()
 	defer func() { debugPrintError(err) }()
@@ -225,7 +225,7 @@ func (engine *Engine) Run(addr string) (err error) {
 
 // RunTLS attaches the engine to a http.Server and starts listening and serving HTTPS (secure) requests.
 // It is a shortcut for http.ListenAndServeTLS(addr, certFile, keyFile, engine)
-// Note: this method will block the calling goroutine undefinitelly unless an error happens.
+// Note: this method will block the calling goroutine indefinitely unless an error happens.
 func (engine *Engine) RunTLS(addr string, certFile string, keyFile string) (err error) {
 	engine.startedChecker.start()
 	defer func() { debugPrintError(err) }()
