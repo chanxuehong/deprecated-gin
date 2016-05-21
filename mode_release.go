@@ -16,7 +16,7 @@ func debugPrintEngineNew() {
 	log.Print(str)
 }
 
-func debugPrint(format string, arg ...interface{}) {}
+func debugPrintf(format string, arg ...interface{}) {}
 
 func debugPrintError(err error) {}
 

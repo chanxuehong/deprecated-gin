@@ -72,11 +72,11 @@ func (w *ResponseWriter) Header() http.Header {
 // send error codes.
 func (w *ResponseWriter) WriteHeader(code int) {
 	if w.hijacked {
-		debugPrint("[WARNING] ResponseWriter.WriteHeader on hijacked connection\r\n")
+		debugPrintf("[WARNING] ResponseWriter.WriteHeader on hijacked connection\r\n")
 		return
 	}
 	if w.wroteHeader {
-		debugPrint("[WARNING] multiple ResponseWriter.WriteHeader calls\r\n")
+		debugPrintf("[WARNING] multiple ResponseWriter.WriteHeader calls\r\n")
 		return
 	}
 	w.wroteHeader = true

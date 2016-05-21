@@ -55,8 +55,9 @@ type Engine struct {
 	noMethod    HandlerChain
 	allNoRoute  HandlerChain // always == combineHandlerChain(middlewares, noRoute) if noRoute is not empty, otherwise is nil.
 	allNoMethod HandlerChain // always == combineHandlerChain(middlewares, noMethod) if noMethod is not empty, otherwise is nil.
-	trees       trees        // point treeBuffer
-	treeBuffer  [len(__httpMethods) * 2]tree
+
+	trees       trees // point treesBuffer
+	treesBuffer [len(__httpMethods)]tree
 
 	// Enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
@@ -100,7 +101,7 @@ func New() *Engine {
 	engine.RouteGroup.basePath = "/"
 	engine.RouteGroup.engine = engine
 	engine.contextPool.New = contextPoolNew
-	engine.trees = engine.treeBuffer[:0]
+	engine.trees = engine.treesBuffer[:0]
 	return engine
 }
 
@@ -113,7 +114,14 @@ func (engine *Engine) addRoute(method, path string, handlers HandlerChain) {
 	if path == "" || path[0] != '/' {
 		panic("path must begin with '/'")
 	}
-	// handlers always valid, see RouteGroup.handle() and combineHandlerChain()
+	if len(handlers) == 0 {
+		panic("handlers can not be empty")
+	}
+	for _, h := range handlers {
+		if h == nil {
+			panic("each handler of handlers can not be nil")
+		}
+	}
 
 	engine.startedChecker.check() // check if engine has been started.
 	debugPrintRoute(method, path, handlers)
@@ -128,7 +136,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlerChain) {
 
 // Routes returns a slice of registered routes, including some useful information, such as:
 // the http method, path and the handler name.
-func (engine *Engine) Routes() (routes []Route) {
+func (engine *Engine) Routes() []Route {
 	return engine.trees.routes()
 }
 
@@ -136,7 +144,12 @@ func (engine *Engine) Routes() (routes []Route) {
 // included in the handler chain for every single request. Even 404, 405, static files...
 // For example, this is the right place for a logger or error management middleware.
 func (engine *Engine) Use(middleware ...HandlerFunc) {
-	engine.startedChecker.check()
+	for _, h := range middleware {
+		if h == nil {
+			panic("each middleware can not be nil")
+		}
+	}
+	engine.startedChecker.check() // check if engine has been started.
 	engine.RouteGroup.Use(middleware...)
 	engine.rebuild404Handlers()
 	engine.rebuild405Handlers()
@@ -145,7 +158,12 @@ func (engine *Engine) Use(middleware ...HandlerFunc) {
 // NoRoute set handlers for NoRoute. It return a 404 code by default.
 // Engine.NoRoute() removes all no-route handlers.
 func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
-	engine.startedChecker.check()
+	for _, h := range handlers {
+		if h == nil {
+			panic("each handler of handlers can not be nil")
+		}
+	}
+	engine.startedChecker.check() // check if engine has been started.
 	engine.noRoute = handlers
 	engine.rebuild404Handlers()
 }
@@ -161,7 +179,12 @@ func (engine *Engine) rebuild404Handlers() {
 // NoMethod set handlers for NoMethod. It return a 405 code by default.
 // Engine.NoMethod() removes all no-method handlers.
 func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
-	engine.startedChecker.check()
+	for _, h := range handlers {
+		if h == nil {
+			panic("each handler of handlers can not be nil")
+		}
+	}
+	engine.startedChecker.check() // check if engine has been started.
 	engine.noMethod = handlers
 	engine.rebuild405Handlers()
 }
@@ -182,7 +205,7 @@ func (engine *Engine) rebuild405Handlers() {
 //
 // Default is true.
 func (engine *Engine) RedirectTrailingSlash(b bool) {
-	engine.startedChecker.check()
+	engine.startedChecker.check() // check if engine has been started.
 	engine.redirectTrailingSlash = b
 }
 
@@ -198,7 +221,7 @@ func (engine *Engine) RedirectTrailingSlash(b bool) {
 //
 // Default is false.
 func (engine *Engine) RedirectFixedPath(b bool) {
-	engine.startedChecker.check()
+	engine.startedChecker.check() // check if engine has been started.
 	engine.redirectFixedPath = b
 }
 
@@ -211,26 +234,28 @@ func (engine *Engine) RedirectFixedPath(b bool) {
 //
 // Default is false.
 func (engine *Engine) HandleMethodNotAllowed(b bool) {
-	engine.startedChecker.check()
+	engine.startedChecker.check() // check if engine has been started.
 	engine.handleMethodNotAllowed = b
 }
 
 // DefaultValidator sets the default Validator to validate object when binding.
 func (engine *Engine) DefaultValidator(v StructValidator) {
-	engine.startedChecker.check()
+	engine.startedChecker.check() // check if engine has been started.
 	engine.defaultValidator = v
 }
 
-// =====================================================================================================================
+// ================================================================================================================
 
 // Run attaches the engine to a http.Server and starts listening and serving HTTP requests.
 // It is a shortcut for http.ListenAndServe(addr, engine)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
 func (engine *Engine) Run(addr string) (err error) {
 	engine.startedChecker.start()
-	defer func() { debugPrintError(err) }()
+	defer func() {
+		debugPrintError(err)
+	}()
 
-	debugPrint("Listening and serving HTTP on %s\r\n", addr)
+	debugPrintf("Listening and serving HTTP on %s\r\n", addr)
 	return http.ListenAndServe(addr, engine)
 }
 
@@ -239,9 +264,11 @@ func (engine *Engine) Run(addr string) (err error) {
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
 func (engine *Engine) RunTLS(addr string, certFile string, keyFile string) (err error) {
 	engine.startedChecker.start()
-	defer func() { debugPrintError(err) }()
+	defer func() {
+		debugPrintError(err)
+	}()
 
-	debugPrint("Listening and serving HTTPS on %s\r\n", addr)
+	debugPrintf("Listening and serving HTTPS on %s\r\n", addr)
 	return http.ListenAndServeTLS(addr, certFile, keyFile, engine)
 }
 
@@ -267,7 +294,7 @@ func (engine *Engine) serveHTTP(ctx *Context) {
 	root := engine.trees.getTree(httpMethod)
 	if root != nil {
 		// find route in tree
-		handlers, params, tsr := root.getValue(path, ctx.PathParams)
+		handlers, params, tsr := root.getValue(path, ctx.PathParams[:0])
 		if handlers != nil {
 			ctx.handlers = handlers
 			ctx.PathParams = params
@@ -292,8 +319,9 @@ func (engine *Engine) serveHTTP(ctx *Context) {
 			if trees[i].method == httpMethod {
 				continue // Skip the requested method - we already tried this one
 			}
-			if handlers, _, _ := trees[i].root.getValue(path, ctx.PathParams); handlers != nil {
+			if handlers, params, _ := trees[i].root.getValue(path, ctx.PathParams[:0]); handlers != nil {
 				ctx.handlers = engine.allNoMethod
+				ctx.PathParams = params
 				serveError(ctx, 405, __default405Body)
 				return
 			}
@@ -335,7 +363,7 @@ func redirectTrailingSlash(ctx *Context) {
 		req.URL.Path = path + "/"
 	}
 
-	debugPrint("redirecting request %d: %s --> %s\r\n", code, path, req.URL.Path)
+	debugPrintf("redirecting request %d: %s --> %s\r\n", code, path, req.URL.Path)
 	http.Redirect(ctx.ResponseWriter, req, req.URL.String(), code)
 }
 
@@ -350,7 +378,7 @@ func redirectFixedPath(ctx *Context, root *node, fixTrailingSlash bool) bool {
 			code = 307
 		}
 		req.URL.Path = string(fixedPath)
-		debugPrint("redirecting request %d: %s --> %s\r\n", code, path, req.URL.Path)
+		debugPrintf("redirecting request %d: %s --> %s\r\n", code, path, req.URL.Path)
 		http.Redirect(ctx.ResponseWriter, req, req.URL.String(), code)
 		return true
 	}
