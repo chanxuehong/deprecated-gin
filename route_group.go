@@ -44,7 +44,7 @@ func (group *RouteGroup) Use(middlewares ...HandlerFunc) {
 	group.middlewares = combineHandlerChain(group.middlewares, middlewares)
 }
 
-var httpMethodRegexp = regexp.MustCompile("^[A-Z]+$") // support custom methods
+var __httpMethodRegexp = regexp.MustCompile("^[A-Z]+$") // support custom methods
 
 // Handle registers a new request handler and middlewares with the given path and method.
 // The last handler should be the real handler, the other ones should be middleware
@@ -58,7 +58,7 @@ var httpMethodRegexp = regexp.MustCompile("^[A-Z]+$") // support custom methods
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
 func (group *RouteGroup) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) {
-	if !httpMethodRegexp.MatchString(httpMethod) {
+	if !__httpMethodRegexp.MatchString(httpMethod) {
 		panic(`http method "` + httpMethod + `" is not valid`)
 	}
 	group.handle(httpMethod, relativePath, handlers)
@@ -76,54 +76,54 @@ func (group *RouteGroup) handle(httpMethod, relativePath string, handlers Handle
 // Any registers a route that matches all the HTTP methods:
 // GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE.
 func (group *RouteGroup) Any(relativePath string, handlers ...HandlerFunc) {
-	for _, method := range httpMethods {
+	for _, method := range __httpMethods {
 		group.handle(method, relativePath, handlers)
 	}
 }
 
 // Get is a shortcut for group.Handle("GET", relativePath, handlers)
 func (group *RouteGroup) Get(relativePath string, handlers ...HandlerFunc) {
-	group.handle(HttpMethodGet, relativePath, handlers)
+	group.handle(HTTPMethodGet, relativePath, handlers)
 }
 
 // Head is a shortcut for group.Handle("HEAD", relativePath, handlers)
 func (group *RouteGroup) Head(relativePath string, handlers ...HandlerFunc) {
-	group.handle(HttpMethodHead, relativePath, handlers)
+	group.handle(HTTPMethodHead, relativePath, handlers)
 }
 
 // Post is a shortcut for group.Handle("POST", relativePath, handlers)
 func (group *RouteGroup) Post(relativePath string, handlers ...HandlerFunc) {
-	group.handle(HttpMethodPost, relativePath, handlers)
+	group.handle(HTTPMethodPost, relativePath, handlers)
 }
 
 // Put is a shortcut for group.Handle("PUT", relativePath, handlers)
 func (group *RouteGroup) Put(relativePath string, handlers ...HandlerFunc) {
-	group.handle(HttpMethodPut, relativePath, handlers)
+	group.handle(HTTPMethodPut, relativePath, handlers)
 }
 
 // Patch is a shortcut for group.Handle("PATCH", relativePath, handlers)
 func (group *RouteGroup) Patch(relativePath string, handlers ...HandlerFunc) {
-	group.handle(HttpMethodPatch, relativePath, handlers)
+	group.handle(HTTPMethodPatch, relativePath, handlers)
 }
 
 // Delete is a shortcut for group.Handle("DELETE", relativePath, handlers)
 func (group *RouteGroup) Delete(relativePath string, handlers ...HandlerFunc) {
-	group.handle(HttpMethodDelete, relativePath, handlers)
+	group.handle(HTTPMethodDelete, relativePath, handlers)
 }
 
 // Connect is a shortcut for group.Handle("CONNECT", relativePath, handlers)
 func (group *RouteGroup) Connect(relativePath string, handlers ...HandlerFunc) {
-	group.handle(HttpMethodConnect, relativePath, handlers)
+	group.handle(HTTPMethodConnect, relativePath, handlers)
 }
 
 // Options is a shortcut for group.Handle("OPTIONS", relativePath, handlers)
 func (group *RouteGroup) Options(relativePath string, handlers ...HandlerFunc) {
-	group.handle(HttpMethodOptions, relativePath, handlers)
+	group.handle(HTTPMethodOptions, relativePath, handlers)
 }
 
 // Trace is a shortcut for group.Handle("TRACE", relativePath, handlers)
 func (group *RouteGroup) Trace(relativePath string, handlers ...HandlerFunc) {
-	group.handle(HttpMethodTrace, relativePath, handlers)
+	group.handle(HTTPMethodTrace, relativePath, handlers)
 }
 
 // StaticFile registers a single route in order to serve a single file of the local filesystem.
@@ -207,7 +207,7 @@ func combineHandlerChain(middlewares, handlers HandlerChain) HandlerChain {
 		}
 	}
 	size := len(middlewares) + len(handlers)
-	if size > maxHandlerChainSize {
+	if size > __maxHandlerChainSize {
 		panic("too many handlers")
 	}
 	combinedHandlerChain := make(HandlerChain, size)

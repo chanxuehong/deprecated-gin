@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-const maxHandlerChainSize = 64
+const __maxHandlerChainSize = 64
 
 type (
 	HandlerChain []HandlerFunc
@@ -25,6 +25,18 @@ func (chain HandlerChain) last() HandlerFunc {
 	return nil
 }
 
+var __httpMethods = [...]string{
+	HTTPMethodGet,
+	HTTPMethodHead,
+	HTTPMethodPost,
+	HTTPMethodPut,
+	HTTPMethodPatch,
+	HTTPMethodDelete,
+	HTTPMethodConnect,
+	HTTPMethodOptions,
+	HTTPMethodTrace,
+}
+
 var _ http.Handler = (*Engine)(nil)
 
 // Engine is the framework's instance, it contains the muxer, middleware and configuration settings.
@@ -34,8 +46,9 @@ var _ http.Handler = (*Engine)(nil)
 //  Engine is NOT copyable.
 //  Please serially sets Engine(normally in 'init' or 'main' goroutine).
 type Engine struct {
-	RouteGroup
 	startedChecker startedChecker
+
+	RouteGroup
 
 	contextPool      sync.Pool
 	defaultValidator StructValidator // Validate object when binding if set.
@@ -45,7 +58,7 @@ type Engine struct {
 	allNoRoute  HandlerChain // always == combineHandlerChain(middlewares, noRoute) if noRoute is not empty, otherwise is nil.
 	allNoMethod HandlerChain // always == combineHandlerChain(middlewares, noMethod) if noMethod is not empty, otherwise is nil.
 	trees       trees        // point treeBuffer
-	treeBuffer  [len(httpMethods) * 2]tree
+	treeBuffer  [len(__httpMethods) * 2]tree
 
 	// Enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
@@ -261,7 +274,7 @@ func (engine *Engine) serveHTTP(ctx *Context) {
 			ctx.Next()
 			return
 		}
-		if httpMethod != HttpMethodConnect && path != "/" {
+		if httpMethod != HTTPMethodConnect && path != "/" {
 			if tsr && engine.redirectTrailingSlash {
 				redirectTrailingSlash(ctx)
 				return
@@ -281,7 +294,7 @@ func (engine *Engine) serveHTTP(ctx *Context) {
 			}
 			if handlers, _, _ := trees[i].root.getValue(path, ctx.PathParams); handlers != nil {
 				ctx.handlers = engine.allNoMethod
-				serveError(ctx, 405, default405Body)
+				serveError(ctx, 405, __default405Body)
 				return
 			}
 		}
@@ -289,12 +302,12 @@ func (engine *Engine) serveHTTP(ctx *Context) {
 
 	// Handle 404
 	ctx.handlers = engine.allNoRoute
-	serveError(ctx, 404, default404Body)
+	serveError(ctx, 404, __default404Body)
 }
 
 var (
-	default404Body = []byte("404 page not found")
-	default405Body = []byte("405 method not allowed")
+	__default404Body = []byte("404 page not found")
+	__default405Body = []byte("405 method not allowed")
 )
 
 func serveError(ctx *Context, defaultCode int, defaultMessage []byte) {
@@ -312,7 +325,7 @@ func redirectTrailingSlash(ctx *Context) {
 	path := req.URL.Path // path != "/"
 
 	code := 301
-	if req.Method != HttpMethodGet {
+	if req.Method != HTTPMethodGet {
 		code = 307
 	}
 
@@ -333,7 +346,7 @@ func redirectFixedPath(ctx *Context, root *node, fixTrailingSlash bool) bool {
 	fixedPath, found := root.findCaseInsensitivePath(pathClean(path), fixTrailingSlash)
 	if found {
 		code := 301
-		if req.Method != HttpMethodGet {
+		if req.Method != HTTPMethodGet {
 			code = 307
 		}
 		req.URL.Path = string(fixedPath)

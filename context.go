@@ -16,42 +16,7 @@ import (
 	"github.com/chanxuehong/gin/binder"
 )
 
-const (
-	// MIME
-	MIMEMultipartForm             = "multipart/form-data"
-	MIMEApplicationURLEncodedForm = "application/x-www-form-urlencoded"
-	MIMEApplicationOctetStream    = "application/octet-stream"
-
-	MIMEApplicationJSON       = "application/json"
-	MIMEApplicationXML        = "application/xml"
-	MIMEApplicationJavaScript = "application/javascript"
-	MIMETextPlain             = "text/plain"
-	MIMETextHTML              = "text/html"
-	MIMETextXML               = "text/xml"
-
-	MIMEApplicationJSONCharsetUTF8       = MIMEApplicationJSON + "; charset=utf-8"
-	MIMEApplicationXMLCharsetUTF8        = MIMEApplicationXML + "; charset=utf-8"
-	MIMEApplicationJavaScriptCharsetUTF8 = MIMEApplicationJavaScript + "; charset=utf-8"
-	MIMETextPlainCharsetUTF8             = MIMETextPlain + "; charset=utf-8"
-	MIMETextHTMLCharsetUTF8              = MIMETextHTML + "; charset=utf-8"
-	MIMETextXMLCharsetUTF8               = MIMETextXML + "; charset=utf-8"
-)
-
-const (
-	// Headers
-	HeaderAcceptEncoding     = "Accept-Encoding"
-	HeaderAuthorization      = "Authorization"
-	HeaderContentDisposition = "Content-Disposition"
-	HeaderContentEncoding    = "Content-Encoding"
-	HeaderContentLength      = "Content-Length"
-	HeaderContentType        = "Content-Type"
-	HeaderLocation           = "Location"
-	HeaderWWWAuthenticate    = "WWW-Authenticate"
-	HeaderXForwardedFor      = "X-Forwarded-For"
-	HeaderXRealIP            = "X-Real-IP"
-)
-
-const abortHandlerIndex = maxHandlerChainSize
+const __abortHandlerIndex = __maxHandlerChainSize
 
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
@@ -105,7 +70,7 @@ func (ctx *Context) Copy() *Context {
 		QueryParams:    ctx.QueryParams,
 		Validator:      ctx.Validator,
 		handlers:       nil,
-		handlerIndex:   abortHandlerIndex,
+		handlerIndex:   __abortHandlerIndex,
 		kvs:            ctx.kvs,
 	}
 }
@@ -118,7 +83,7 @@ func (ctx *Context) HandlerName() string {
 
 // IsAborted returns true if the currect context was aborted.
 func (ctx *Context) IsAborted() bool {
-	return ctx.handlerIndex >= abortHandlerIndex
+	return ctx.handlerIndex >= __abortHandlerIndex
 }
 
 // Abort prevents pending handlers from being called. Note that this will not stop the current handler.
@@ -126,7 +91,7 @@ func (ctx *Context) IsAborted() bool {
 // authorization fails (ex: the password does not match), call Abort to ensure the remaining handlers
 // for this request are not called.
 func (ctx *Context) Abort() {
-	ctx.handlerIndex = abortHandlerIndex
+	ctx.handlerIndex = __abortHandlerIndex
 }
 
 // AbortWithStatus writes the headers with the specified status code and calls `Abort()`.

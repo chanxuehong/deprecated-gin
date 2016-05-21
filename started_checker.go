@@ -9,20 +9,20 @@ import (
 )
 
 const (
-	startedCheckerInitialValue = uintptr(0)
-	startedCheckerStartedValue = ^startedCheckerInitialValue
+	__startedCheckerInitialValue = uintptr(0)
+	__startedCheckerStartedValue = ^uintptr(0)
 )
 
 type startedChecker uintptr
 
 func (p *startedChecker) start() {
-	if uintptr(*p) == startedCheckerInitialValue {
-		atomic.CompareAndSwapUintptr((*uintptr)(p), startedCheckerInitialValue, startedCheckerStartedValue)
+	if uintptr(*p) == __startedCheckerInitialValue {
+		atomic.CompareAndSwapUintptr((*uintptr)(p), __startedCheckerInitialValue, __startedCheckerStartedValue)
 	}
 }
 
 func (v startedChecker) check() {
-	if uintptr(v) != startedCheckerInitialValue {
+	if uintptr(v) != __startedCheckerInitialValue {
 		panic("the service has been started.")
 	}
 }
