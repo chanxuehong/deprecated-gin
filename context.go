@@ -5,18 +5,27 @@
 package gin
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
+	"mime"
 	"net/http"
 	"net/url"
-	_filepath "path/filepath"
+	"os"
+	"path/filepath"
+	"time"
+	"unicode"
 
 	"github.com/chanxuehong/gin/binder"
 )
 
-const __abortHandlerIndex = __maxHandlerChainSize
+const (
+	__initHandlerIndex  = -1
+	__abortHandlerIndex = __maxHandlerChainSize
+)
 
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
@@ -29,7 +38,7 @@ type Context struct {
 	ResponseWriter *ResponseWriter
 	Request        *http.Request
 
-	pathParamsBuffer [256]Param // Context.PathParams points to this
+	pathParamsBuffer [8]Param // Context.PathParams points to this
 	PathParams       Params
 	QueryParams      url.Values
 
@@ -45,14 +54,14 @@ type Context struct {
 	kvs map[string]interface{}
 }
 
-func (ctx *Context) reset(validator StructValidator) {
+func (ctx *Context) reset() {
 	ctx.ResponseWriter = &ctx.responseWriter
 	ctx.Request = nil
 	ctx.PathParams = ctx.pathParamsBuffer[:0]
 	ctx.QueryParams = nil
-	ctx.Validator = validator
+	ctx.Validator = nil
 	ctx.handlers = nil
-	ctx.handlerIndex = -1
+	ctx.handlerIndex = __initHandlerIndex
 	ctx.kvs = nil
 }
 
@@ -118,7 +127,10 @@ func (ctx *Context) Next() {
 			ctx.handlerIndex--
 			break
 		}
-		ctx.handlers[ctx.handlerIndex](ctx)
+		handler := ctx.handlers[ctx.handlerIndex]
+		if handler != nil {
+			handler(ctx)
+		}
 	}
 }
 
@@ -130,6 +142,11 @@ func (ctx *Context) Set(key string, value interface{}) {
 		ctx.kvs = make(map[string]interface{})
 	}
 	ctx.kvs[key] = value
+}
+
+// Delete remove the value with given key.
+func (ctx *Context) Delete(key string) {
+	delete(ctx.kvs, key)
 }
 
 // Get returns the value for the given key, ie: (value, true).
@@ -144,7 +161,7 @@ func (ctx *Context) MustGet(key string) interface{} {
 	if value, exists := ctx.Get(key); exists {
 		return value
 	}
-	panic(`[kvs] key "` + key + `" does not exist`)
+	panic(`[kvs] value with key "` + key + `" does not exist`)
 }
 
 // ================================ request ====================================
@@ -184,52 +201,38 @@ func (ctx *Context) DefaultQuery(name, defaultValue string) string {
 	return defaultValue
 }
 
-// FormValue is a shortcut for ctx.Request.FormValue(name)
+// FormValue is a shortcut for ctx.Request.FormValue(name).
 func (ctx *Context) FormValue(name string) string {
 	return ctx.Request.FormValue(name)
 }
 
 // DefaultFormValue like FormValue if name matched, otherwise it returns defaultValue.
 func (ctx *Context) DefaultFormValue(name, defaultValue string) string {
-	req := ctx.Request
-	if req.Form == nil {
-		req.ParseMultipartForm(32 << 20) // 32 MB
+	r := ctx.Request
+	if r.Form == nil {
+		r.ParseMultipartForm(32 << 20) // 32 MB
 	}
-	if vs := req.Form[name]; len(vs) > 0 {
+	if vs := r.Form[name]; len(vs) > 0 {
 		return vs[0]
 	}
 	return defaultValue
 }
 
-// PostFormValue like ctx.Request.PostFormValue(name) but it also gets value from ctx.Request.MultipartForm.Value.
+// PostFormValue is a shortcut for ctx.Request.PostFormValue(name).
 func (ctx *Context) PostFormValue(name string) (value string) {
-	value, _ = ctx.postFormValue(name)
-	return
+	return ctx.Request.PostFormValue(name)
 }
 
 // DefaultPostFormValue like PostFormValue if name matched, otherwise it returns defaultValue.
 func (ctx *Context) DefaultPostFormValue(name, defaultValue string) (value string) {
-	var exists bool
-	if value, exists = ctx.postFormValue(name); exists {
-		return
+	r := ctx.Request
+	if r.PostForm == nil {
+		r.ParseMultipartForm(32 << 20) // 32 MB
+	}
+	if vs := r.PostForm[name]; len(vs) > 0 {
+		return vs[0]
 	}
 	return defaultValue
-}
-
-func (ctx *Context) postFormValue(name string) (value string, exists bool) {
-	req := ctx.Request
-	if req.PostForm == nil {
-		req.ParseMultipartForm(32 << 20) // 32 MB
-	}
-	if vs := req.PostForm[name]; len(vs) > 0 {
-		return vs[0], true
-	}
-	if req.MultipartForm != nil && req.MultipartForm.Value != nil {
-		if vs := req.MultipartForm.Value[name]; len(vs) > 0 {
-			return vs[0], true
-		}
-	}
-	return
 }
 
 // BindJSON is a shortcut for ctx.BindWith(obj, binder.JSON).
@@ -265,12 +268,18 @@ func (ctx *Context) Redirect(code int, location string) {
 	http.Redirect(ctx.ResponseWriter, ctx.Request, location, code)
 }
 
+// NoContent sends a response with no body and a status code.
+func (ctx *Context) NoContent(code int) error {
+	ctx.ResponseWriter.WriteHeader(code)
+	return nil
+}
+
 // String writes the given string into the response body.
 // It sets the Content-Type as "text/plain; charset=utf-8".
 func (ctx *Context) String(code int, format string, values ...interface{}) (err error) {
 	w := ctx.ResponseWriter
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set(HeaderContentType, MIMETextPlainCharsetUTF8)
+	w.Header().Set(HeaderXContentTypeOptions, "nosniff")
 	w.WriteHeader(code)
 	if len(values) > 0 {
 		_, err = fmt.Fprintf(w, format, values...)
@@ -284,7 +293,7 @@ func (ctx *Context) String(code int, format string, values ...interface{}) (err 
 // It sets the Content-Type as "application/json; charset=utf-8".
 func (ctx *Context) JSON(code int, obj interface{}) (err error) {
 	w := ctx.ResponseWriter
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set(HeaderContentType, MIMEApplicationJSONCharsetUTF8)
 	w.WriteHeader(code)
 	return json.NewEncoder(w).Encode(obj)
 }
@@ -293,13 +302,23 @@ func (ctx *Context) JSON(code int, obj interface{}) (err error) {
 // It sets the Content-Type as "application/json; charset=utf-8".
 func (ctx *Context) JSONIndent(code int, obj interface{}, prefix string, indent string) (err error) {
 	w := ctx.ResponseWriter
-	jsonBytes, err := json.MarshalIndent(obj, prefix, indent)
+	body, err := json.MarshalIndent(obj, prefix, indent)
 	if err != nil {
 		return
 	}
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set(HeaderContentType, MIMEApplicationJSONCharsetUTF8)
 	w.WriteHeader(code)
-	_, err = w.Write(jsonBytes)
+	_, err = w.Write(body)
+	return
+}
+
+// JSONBlob sends a JSON response with status code.
+// It sets the Content-Type as "application/json; charset=utf-8".
+func (ctx *Context) JSONBlob(code int, blob []byte) (err error) {
+	w := ctx.ResponseWriter
+	w.Header().Set(HeaderContentType, MIMEApplicationJSONCharsetUTF8)
+	w.WriteHeader(code)
+	_, err = w.Write(blob)
 	return
 }
 
@@ -307,7 +326,7 @@ func (ctx *Context) JSONIndent(code int, obj interface{}, prefix string, indent 
 // It sets the Content-Type as "application/xml; charset=utf-8".
 func (ctx *Context) XML(code int, obj interface{}) (err error) {
 	w := ctx.ResponseWriter
-	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+	w.Header().Set(HeaderContentType, MIMEApplicationXMLCharsetUTF8)
 	w.WriteHeader(code)
 	if _, err = w.WriteString(xml.Header); err != nil {
 		return
@@ -319,7 +338,7 @@ func (ctx *Context) XML(code int, obj interface{}) (err error) {
 // It sets the Content-Type as "application/xml; charset=utf-8".
 func (ctx *Context) XMLIndent(code int, obj interface{}, prefix string, indent string) (err error) {
 	w := ctx.ResponseWriter
-	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+	w.Header().Set(HeaderContentType, MIMEApplicationXMLCharsetUTF8)
 	w.WriteHeader(code)
 	if _, err = w.WriteString(xml.Header); err != nil {
 		return
@@ -329,25 +348,74 @@ func (ctx *Context) XMLIndent(code int, obj interface{}, prefix string, indent s
 	return encoder.Encode(obj)
 }
 
-// File writes the specified file into the body stream.
-func (ctx *Context) File(filepath string) (err error) {
+var __xmlHeaderPrefix = []byte(`<?xml `) // <?xml version="1.0" encoding="UTF-8"?>
+
+// XMLBlob sends an XML response with status code.
+// It sets the Content-Type as "application/xml; charset=utf-8".
+func (ctx *Context) XMLBlob(code int, blob []byte) (err error) {
+	w := ctx.ResponseWriter
+	w.Header().Set(HeaderContentType, MIMEApplicationXMLCharsetUTF8)
+	w.WriteHeader(code)
+	if !bytes.HasPrefix(bytes.TrimLeftFunc(blob, unicode.IsSpace), __xmlHeaderPrefix) {
+		if _, err = w.WriteString(xml.Header); err != nil {
+			return
+		}
+	}
+	_, err = w.Write(blob)
+	return
+}
+
+// ServeFile is wrapper for http.ServeFile.
+func (ctx *Context) ServeFile(filepath string) (err error) {
 	http.ServeFile(ctx.ResponseWriter, ctx.Request, filepath)
 	return
 }
 
-// Attachment adds a `Content-Disposition:attachment;filename="XXX"` header and
-// writes the specified file into the body stream.
-// filename can be empty, in that case name of the file is used.
-func (ctx *Context) Attachment(filepath, filename string) (err error) {
-	if filename == "" {
-		_, filename = _filepath.Split(filepath)
-		if filename == "" {
-			return errors.New("invalid filepath")
-		}
-	}
-	ContentDisposition := `attachment;filename="` + url.QueryEscape(filename) + `"`
-	w := ctx.ResponseWriter
-	w.Header().Set("Content-Disposition", ContentDisposition)
-	http.ServeFile(w, ctx.Request, filepath)
+// ServeContent is wrapper for http.ServeContent.
+func (ctx *Context) ServeContent(content io.ReadSeeker, name string, modtime time.Time) (err error) {
+	http.ServeContent(ctx.ResponseWriter, ctx.Request, name, modtime, content)
 	return
+}
+
+// AttachmentFile adds a `Content-Disposition:attachment;filename="XXX"` header
+// and writes the specified file into the body stream.
+//
+// filename can be empty, in that case name of the file is used.
+func (ctx *Context) AttachmentFile(filepath, filename string) (err error) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return
+	}
+	if fileInfo.IsDir() {
+		return errors.New("can't set a dir as file attachment")
+	}
+
+	if filename == "" {
+		filename = fileInfo.Name()
+	}
+	return ctx.Attachment(file, filename)
+}
+
+// Attachment adds a `Content-Disposition:attachment;filename="XXX"` header
+// and writes the specified content into the body stream.
+func (ctx *Context) Attachment(content io.Reader, filename string) (err error) {
+	w := ctx.ResponseWriter
+	w.Header().Set(HeaderContentType, contentTypeFromName(filename))
+	w.Header().Set(HeaderContentDisposition, `attachment;filename="`+url.QueryEscape(filename)+`"`)
+	_, err = w.ReadFrom(content)
+	return
+}
+
+func contentTypeFromName(name string) string {
+	t := mime.TypeByExtension(filepath.Ext(name))
+	if t != "" {
+		return t
+	}
+	return MIMEApplicationOctetStream
 }

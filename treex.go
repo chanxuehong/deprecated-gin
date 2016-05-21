@@ -29,10 +29,10 @@ func (params Params) ByName(name string) (value string) {
 // ByIndex returns the value with given index.
 // If the index out of range, an empty string is returned.
 func (params Params) ByIndex(index int) (value string) {
-	if index >= 0 && index < len(params) {
-		return params[index].Value
+	if index < 0 || index >= len(params) {
+		return
 	}
-	return
+	return params[index].Value
 }
 
 type tree struct {

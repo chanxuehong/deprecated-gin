@@ -16,8 +16,6 @@ type (
 	HandlerFunc  func(*Context)
 )
 
-// last returns the last handler in the chain, it returns nil if chain is empty.
-// ie. the last handler is the main own.
 func (chain HandlerChain) last() HandlerFunc {
 	if n := len(chain); n > 0 {
 		return chain[n-1]
@@ -251,12 +249,14 @@ func (engine *Engine) RunTLS(addr string, certFile string, keyFile string) (err 
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	engine.startedChecker.start()
 	ctx := engine.contextPool.Get().(*Context)
-	defer engine.contextPool.Put(ctx)
 
-	ctx.reset(engine.defaultValidator)
+	ctx.reset()
 	ctx.ResponseWriter.reset(w)
 	ctx.Request = r
+	ctx.Validator = engine.defaultValidator
 	engine.serveHTTP(ctx)
+
+	engine.contextPool.Put(ctx)
 }
 
 func (engine *Engine) serveHTTP(ctx *Context) {
@@ -313,8 +313,8 @@ var (
 func serveError(ctx *Context, defaultCode int, defaultMessage []byte) {
 	ctx.Next()
 	if w := ctx.ResponseWriter; !w.WroteHeader() {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set(HeaderContentType, MIMETextPlainCharsetUTF8)
+		w.Header().Set(HeaderXContentTypeOptions, "nosniff")
 		w.WriteHeader(defaultCode)
 		w.Write(defaultMessage)
 	}

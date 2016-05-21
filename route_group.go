@@ -130,7 +130,7 @@ func (group *RouteGroup) Trace(relativePath string, handlers ...HandlerFunc) {
 //   group.StaticFile("favicon.ico", "./resources/favicon.ico")
 func (group *RouteGroup) StaticFile(relativePath, filepath string) {
 	handler := func(ctx *Context) {
-		ctx.File(filepath)
+		ctx.ServeFile(filepath)
 	}
 	group.Get(relativePath, handler)
 	group.Head(relativePath, handler)

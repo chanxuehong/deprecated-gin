@@ -35,7 +35,10 @@ func (h H) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 }
 
 func nameOfFunction(fn interface{}) string {
-	pc := reflect.ValueOf(fn).Pointer() // fn != nil
+	if fn == nil {
+		return "unknown"
+	}
+	pc := reflect.ValueOf(fn).Pointer()
 	if pc == 0 {
 		return "unknown"
 	}
