@@ -6,12 +6,17 @@ package gin
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"net"
 	"net/http"
 )
 
 var _ http.ResponseWriter = (*ResponseWriter)(nil)
+var _ http.Flusher = (*ResponseWriter)(nil)
+var _ http.Hijacker = (*ResponseWriter)(nil)
+var _ http.CloseNotifier = (*ResponseWriter)(nil)
+var _ io.ReaderFrom = (*ResponseWriter)(nil)
 
 // ResponseWriter implements http.ResponseWriter, http.Flusher, http.Hijacker, http.CloseNotifier and io.ReaderFrom.
 type ResponseWriter struct {
@@ -28,6 +33,26 @@ func (w *ResponseWriter) reset(writer http.ResponseWriter) {
 	w.wroteHeader = false
 	w.status = http.StatusOK
 	w.written = 0
+}
+
+// Hijacked replies ResponseWriter whether has been hijacked.
+func (w *ResponseWriter) Hijacked() bool {
+	return w.hijacked
+}
+
+// WroteHeader replies header whether has been written.
+func (w *ResponseWriter) WroteHeader() bool {
+	return w.wroteHeader
+}
+
+// Status returns response status code of the current request.
+func (w *ResponseWriter) Status() int {
+	return w.status
+}
+
+// Written returns number of bytes written in body.
+func (w *ResponseWriter) Written() int64 {
+	return w.written
 }
 
 // Header returns the header map that will be sent by
@@ -102,7 +127,9 @@ func (w *ResponseWriter) Flush() {
 	if !w.wroteHeader {
 		w.WriteHeader(http.StatusOK)
 	}
-	w.responseWriter.(http.Flusher).Flush()
+	if flusher, ok := w.responseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
 }
 
 // Hijack implements the http.Hijacker interface.
@@ -110,25 +137,18 @@ func (w *ResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	if !w.hijacked {
 		w.hijacked = true
 	}
-	return w.responseWriter.(http.Hijacker).Hijack()
+	hijacker, ok := w.responseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, errors.New("ResponseWriter.Hijack not supported")
+	}
+	return hijacker.Hijack()
 }
 
 // CloseNotify implements the http.CloseNotifier interface.
 func (w *ResponseWriter) CloseNotify() <-chan bool {
-	return w.responseWriter.(http.CloseNotifier).CloseNotify()
-}
-
-// WroteHeader replies header has been written.
-func (w *ResponseWriter) WroteHeader() bool {
-	return w.wroteHeader
-}
-
-// Status returns response status code of the current request.
-func (w *ResponseWriter) Status() int {
-	return w.status
-}
-
-// Written returns number of bytes written in body.
-func (w *ResponseWriter) Written() int64 {
-	return w.written
+	closeNotifier, ok := w.responseWriter.(http.CloseNotifier)
+	if !ok {
+		panic("ResponseWriter.CloseNotify not supported")
+	}
+	return closeNotifier.CloseNotify()
 }
