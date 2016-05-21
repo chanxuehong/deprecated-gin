@@ -17,20 +17,20 @@ type Params []Param
 
 // ByName returns the value of the first Param which key matches the given name.
 // If no matching Param is found, an empty string is returned.
-func (params Params) ByName(name string) (value string) {
+func (params Params) ByName(name string) string {
 	for i := 0; i < len(params); i++ {
 		if params[i].Key == name {
 			return params[i].Value
 		}
 	}
-	return
+	return ""
 }
 
 // ByIndex returns the value with given index.
 // If the index out of range, an empty string is returned.
-func (params Params) ByIndex(index int) (value string) {
+func (params Params) ByIndex(index int) string {
 	if index < 0 || index >= len(params) {
-		return
+		return ""
 	}
 	return params[index].Value
 }
@@ -51,8 +51,8 @@ func (v trees) getTree(method string) *node {
 	return nil
 }
 
-func (v trees) addTree(method string, root *node) trees {
-	return append(v, tree{method: method, root: root})
+func (p *trees) addTree(method string, root *node) {
+	*p = append(*p, tree{method: method, root: root})
 }
 
 type Route struct {
@@ -63,24 +63,24 @@ type Route struct {
 
 // routes returns a slice of registered routes, including some useful information, such as:
 // the http method, path and the handler name.
-func (v trees) routes() (routes []Route) {
+func (v trees) routes() []Route {
+	routes := make([]Route, 0, 64)
 	for i, l := 0, len(v); i < l; i++ {
-		routes = iterateTree(routes, v[i].root, "", v[i].method)
+		iterateTree(&routes, v[i].root, "", v[i].method)
 	}
 	return routes
 }
 
-func iterateTree(routes []Route, root *node, pathPrefix, treeMethod string) []Route {
+func iterateTree(routesPtr *[]Route, root *node, pathPrefix, treeMethod string) {
 	path := pathPrefix + root.path
 	if len(root.handlers) > 0 {
-		routes = append(routes, Route{
+		*routesPtr = append(*routesPtr, Route{
 			Method:  treeMethod,
 			Path:    path,
 			Handler: nameOfFunction(root.handlers.last()),
 		})
 	}
 	for _, childRoot := range root.children {
-		routes = iterateTree(routes, childRoot, path, treeMethod)
+		iterateTree(routesPtr, childRoot, path, treeMethod)
 	}
-	return routes
 }

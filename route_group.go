@@ -132,8 +132,8 @@ func (group *RouteGroup) StaticFile(relativePath, filepath string) {
 	handler := func(ctx *Context) {
 		ctx.ServeFile(filepath)
 	}
-	group.Get(relativePath, handler)
 	group.Head(relativePath, handler)
+	group.Get(relativePath, handler)
 }
 
 // StaticRoot like nginx root location but relativePath must be ended with '/' if not empty.
@@ -146,7 +146,10 @@ func (group *RouteGroup) StaticFile(relativePath, filepath string) {
 //       root   /home/root;
 //   }
 func (group *RouteGroup) StaticRoot(relativePath string, root http.FileSystem) {
-	if length := len(relativePath); length > 0 && relativePath[length-1] != '/' {
+	if relativePath == "" {
+		relativePath = "/"
+	}
+	if relativePath[len(relativePath)-1] != '/' {
 		panic("path must be ended with '/' when serving a static root")
 	}
 	if strings.ContainsRune(relativePath, '*') {
@@ -156,8 +159,8 @@ func (group *RouteGroup) StaticRoot(relativePath string, root http.FileSystem) {
 		http.FileServer(root).ServeHTTP(ctx.ResponseWriter, ctx.Request)
 	}
 	relativePath = path.Join(relativePath, "*filepath")
-	group.Get(relativePath, handler)
 	group.Head(relativePath, handler)
+	group.Get(relativePath, handler)
 }
 
 // StaticAlias like nginx alias location(also relativePath must be ended with '/' if not empty).
@@ -170,28 +173,26 @@ func (group *RouteGroup) StaticRoot(relativePath string, root http.FileSystem) {
 //       alias  /home/root/abc/;
 //   }
 func (group *RouteGroup) StaticAlias(relativePath string, dir http.FileSystem) {
-	if length := len(relativePath); length > 0 {
-		if relativePath[length-1] != '/' {
-			panic("path must be ended with '/' when serving a static alias")
-		}
-	} else {
+	if relativePath == "" {
 		relativePath = "/"
+	}
+	if relativePath[len(relativePath)-1] != '/' {
+		panic("path must be ended with '/' when serving a static alias")
 	}
 	if strings.ContainsRune(relativePath, ':') || strings.ContainsRune(relativePath, '*') {
 		panic("path parameters can not be used when serving a static alias")
 	}
-	prefix := pathJoin(group.basePath, relativePath)
 	handler := func(ctx *Context) {
-		http.StripPrefix(prefix, http.FileServer(dir)).ServeHTTP(ctx.ResponseWriter, ctx.Request)
+		http.StripPrefix(pathJoin(group.basePath, relativePath), http.FileServer(dir)).ServeHTTP(ctx.ResponseWriter, ctx.Request)
 	}
 	relativePath = path.Join(relativePath, "*filepath")
-	group.Get(relativePath, handler)
 	group.Head(relativePath, handler)
+	group.Get(relativePath, handler)
 }
 
 func pathJoin(basePath, relativePath string) string {
 	if len(relativePath) == 0 {
-		return basePath // basePath is canonical and beginning with '/'.
+		return pathClean(basePath)
 	}
 	return pathClean(basePath + "/" + relativePath)
 }
@@ -206,12 +207,8 @@ func combineHandlerChain(middlewares, handlers HandlerChain) HandlerChain {
 			panic("handler can not be nil")
 		}
 	}
-	size := len(middlewares) + len(handlers)
-	if size > __maxHandlerChainSize {
+	if size := len(middlewares) + len(handlers); size > __maxHandlerChainSize {
 		panic("too many handlers")
 	}
-	combinedHandlerChain := make(HandlerChain, size)
-	copy(combinedHandlerChain, middlewares)
-	copy(combinedHandlerChain[len(middlewares):], handlers)
-	return combinedHandlerChain
+	return append(middlewares, handlers...)
 }

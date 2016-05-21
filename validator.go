@@ -31,5 +31,5 @@ func (p *defaultValidator) ValidateStruct(obj interface{}) error {
 	if v.Kind() != reflect.Struct {
 		return nil
 	}
-	return (*validator.Validate)(p).Struct(obj)
+	return ((*validator.Validate)(p)).Struct(obj)
 }

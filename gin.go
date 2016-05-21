@@ -121,7 +121,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlerChain) {
 	root := engine.trees.getTree(method)
 	if root == nil {
 		root = new(node)
-		engine.trees = engine.trees.addTree(method, root)
+		engine.trees.addTree(method, root)
 	}
 	root.addRoute(path, handlers)
 }
