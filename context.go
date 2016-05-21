@@ -40,7 +40,7 @@ type Context struct {
 
 	pathParamsBuffer [8]Param // Context.PathParams points to this
 	PathParams       Params
-	QueryParams      url.Values
+	queryParams      url.Values
 
 	// Validator will validate object when binding if not nil.
 	// By default the Validator is nil, you can set default Validator using
@@ -58,7 +58,7 @@ func (ctx *Context) reset() {
 	ctx.ResponseWriter = &ctx.responseWriter
 	ctx.Request = nil
 	ctx.PathParams = ctx.pathParamsBuffer[:0]
-	ctx.QueryParams = nil
+	ctx.queryParams = nil
 	ctx.Validator = nil
 	ctx.handlers = nil
 	ctx.handlerIndex = __initHandlerIndex
@@ -76,7 +76,7 @@ func (ctx *Context) Copy() *Context {
 		ResponseWriter: nil,
 		Request:        ctx.Request,
 		PathParams:     pathParams,
-		QueryParams:    ctx.QueryParams,
+		queryParams:    ctx.queryParams,
 		Validator:      ctx.Validator,
 		handlers:       nil,
 		handlerIndex:   __abortHandlerIndex,
@@ -182,20 +182,23 @@ func (ctx *Context) ParamByIndex(index int) string {
 	return ctx.PathParams.ByIndex(index)
 }
 
-// Query returns the url query values by name.
-func (ctx *Context) Query(name string) string {
-	if ctx.QueryParams == nil {
-		ctx.QueryParams = ctx.Request.URL.Query()
+// QueryParams returns the url query values.
+func (ctx *Context) QueryParams() url.Values {
+	if ctx.queryParams == nil {
+		ctx.queryParams = ctx.Request.URL.Query()
 	}
-	return ctx.QueryParams.Get(name)
+	return ctx.queryParams
+}
+
+// Query returns the url query value by name.
+func (ctx *Context) Query(name string) string {
+	return ctx.QueryParams().Get(name)
 }
 
 // DefaultQuery like Query if name matched, otherwise it returns defaultValue.
 func (ctx *Context) DefaultQuery(name, defaultValue string) string {
-	if ctx.QueryParams == nil {
-		ctx.QueryParams = ctx.Request.URL.Query()
-	}
-	if vs := ctx.QueryParams[name]; len(vs) > 0 {
+	queryParams := ctx.QueryParams()
+	if vs := queryParams[name]; len(vs) > 0 {
 		return vs[0]
 	}
 	return defaultValue
