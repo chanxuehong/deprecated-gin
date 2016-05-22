@@ -2,59 +2,8 @@
 
 Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
 
-
-## Benchmarks
-
-Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httprouter)  
-
-[See all benchmarks](https://github.com/gin-gonic/gin/blob/master/BENCHMARKS.md)
-
-Benchmark name 					| (1) 		| (2) 		| (3) 		| (4)
---------------------------------|----------:|----------:|----------:|------:
-BenchmarkAce_GithubAll 			| 10000 	| 109482 	| 13792 	| 167
-BenchmarkBear_GithubAll 		| 10000 	| 287490 	| 79952 	| 943
-BenchmarkBeego_GithubAll 		| 3000 		| 562184 	| 146272 	| 2092
-BenchmarkBone_GithubAll 		| 500 		| 2578716 	| 648016 	| 8119
-BenchmarkDenco_GithubAll 		| 20000 	| 94955 	| 20224 	| 167
-BenchmarkEcho_GithubAll 		| 30000 	| 58705 	| 0 		| 0
-**BenchmarkGin_GithubAll** 		| **30000** | **50991** | **0** 	| **0**
-BenchmarkGocraftWeb_GithubAll 	| 5000 		| 449648 	| 133280 	| 1889
-BenchmarkGoji_GithubAll 		| 2000 		| 689748 	| 56113 	| 334
-BenchmarkGoJsonRest_GithubAll 	| 5000 		| 537769 	| 135995 	| 2940
-BenchmarkGoRestful_GithubAll 	| 100 		| 18410628 	| 797236 	| 7725
-BenchmarkGorillaMux_GithubAll 	| 200 		| 8036360 	| 153137 	| 1791
-BenchmarkHttpRouter_GithubAll 	| 20000 	| 63506 	| 13792 	| 167
-BenchmarkHttpTreeMux_GithubAll 	| 10000 	| 165927 	| 56112 	| 334
-BenchmarkKocha_GithubAll 		| 10000 	| 171362 	| 23304 	| 843
-BenchmarkMacaron_GithubAll 		| 2000 		| 817008 	| 224960 	| 2315
-BenchmarkMartini_GithubAll 		| 100 		| 12609209 	| 237952 	| 2686
-BenchmarkPat_GithubAll 			| 300 		| 4830398 	| 1504101 	| 32222
-BenchmarkPossum_GithubAll 		| 10000 	| 301716 	| 97440 	| 812
-BenchmarkR2router_GithubAll 	| 10000 	| 270691 	| 77328 	| 1182
-BenchmarkRevel_GithubAll 		| 1000 		| 1491919 	| 345553 	| 5918
-BenchmarkRivet_GithubAll 		| 10000 	| 283860 	| 84272 	| 1079
-BenchmarkTango_GithubAll 		| 5000 		| 473821 	| 87078 	| 2470
-BenchmarkTigerTonic_GithubAll 	| 2000 		| 1120131 	| 241088 	| 6052
-BenchmarkTraffic_GithubAll 		| 200 		| 8708979 	| 2664762 	| 22390
-BenchmarkVulcan_GithubAll 		| 5000 		| 353392 	| 19894 	| 609
-BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
-
-(1): Total Repetitions  
-(2): Single Repetition Duration (ns/op)  
-(3): Heap Memory (B/op)  
-(4): Average Allocations per Repetition (allocs/op)  
-
-
-## Gin v1 stable
-
-- [x] Zero allocation router.
-- [x] Still the fastest http router and framework. From routing to writing.
-- [x] Complete suite of unit tests
-- [x] Battle tested
-- [x] API frozen, new releases will not break your code.
-
-
 ## Start using it
+
 1. Download and install it:
 
 ```sh
@@ -66,7 +15,6 @@ go get -u github.com/chanxuehong/gin
 ```go
 import "github.com/chanxuehong/gin"
 ```
-
 
 ## API Examples
 
@@ -98,7 +46,6 @@ func main() {
 	router.Run(":8080")
 }
 ```
-
 
 #### Parameters in path
 
@@ -133,7 +80,6 @@ func main() {
 }
 ```
 
-
 #### Querystring parameters
 
 ```go
@@ -161,8 +107,7 @@ func main() {
 }
 ```
 
-
-#### Multipart/Urlencoded Form
+#### Urlencoded Form
 
 ```go
 package main
@@ -188,7 +133,6 @@ func main() {
 	router.Run(":8080")
 }
 ```
-
 
 #### Another example: query + post form
 
@@ -228,7 +172,6 @@ func main() {
 id: 1234; page: 0; name: manu; message: this_is_great
 ```
 
-
 #### Grouping routes
 
 ```go
@@ -267,7 +210,6 @@ func main() {
 	router.Run(":8080")
 }
 ```
-
 
 #### creating and using middleware
 
@@ -336,7 +278,6 @@ func main() {
 }
 ```
 
-
 #### Model binding and validation
 
 To bind a request body into a type, use model binding. We currently support binding of JSON, XML.
@@ -381,7 +322,6 @@ func main() {
 }
 ```
 
-
 #### XML and JSON rendering
 
 ```go
@@ -425,7 +365,6 @@ func main() {
 }
 ```
 
-
 #### Serving static files
 
 ```go
@@ -448,7 +387,6 @@ func main() {
 	router.Run(":8080")
 }
 ```
-
 
 #### Redirects
 
@@ -474,10 +412,12 @@ func main() {
 	router.Run(":8080")
 }
 ```
+
 Both internal and external locations are supported.
 
 
 #### goroutines inside a middleware
+
 When starting inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
 
 ```go
@@ -518,7 +458,6 @@ func main() {
 }
 ```
 
-
 #### Custom HTTP configuration
 
 Use `http.ListenAndServe()` directly, like this:
@@ -537,7 +476,9 @@ func main() {
 	http.ListenAndServe(":8080", router)
 }
 ```
+
 or
+
 
 ```go
 package main
