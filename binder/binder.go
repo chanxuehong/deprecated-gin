@@ -11,8 +11,3 @@ import (
 type Binder interface {
 	Bind(*http.Request, interface{}) error
 }
-
-var (
-	JSON Binder = (*jsonBinder)(nil)
-	XML  Binder = (*xmlBinder)(nil)
-)

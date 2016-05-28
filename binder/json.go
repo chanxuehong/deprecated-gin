@@ -9,7 +9,9 @@ import (
 	"net/http"
 )
 
-type jsonBinder int
+var JSON Binder = (*jsonBinder)(nil)
+
+type jsonBinder struct{}
 
 func (*jsonBinder) Bind(req *http.Request, obj interface{}) error {
 	return json.NewDecoder(req.Body).Decode(obj)

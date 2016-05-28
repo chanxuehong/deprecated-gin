@@ -9,7 +9,9 @@ import (
 	"net/http"
 )
 
-type xmlBinder int
+var XML Binder = (*xmlBinder)(nil)
+
+type xmlBinder struct{}
 
 func (*xmlBinder) Bind(req *http.Request, obj interface{}) error {
 	return xml.NewDecoder(req.Body).Decode(obj)

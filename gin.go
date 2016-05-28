@@ -84,6 +84,9 @@ type Engine struct {
 	// If no other Method is allowed, the request is delegated to the NotFound
 	// handler.
 	handleMethodNotAllowed bool
+
+	// If enabled, the engine get client IP from http hearder X-Real-IP, X-Forwarded-For.
+	fetchClientIPFromHeader bool
 }
 
 // New returns a new blank Engine instance without any middleware attached.
@@ -94,9 +97,10 @@ type Engine struct {
 func New() *Engine {
 	debugPrintEngineNew()
 	engine := &Engine{
-		redirectTrailingSlash:  true,
-		redirectFixedPath:      false,
-		handleMethodNotAllowed: false,
+		redirectTrailingSlash:   true,
+		redirectFixedPath:       false,
+		handleMethodNotAllowed:  false,
+		fetchClientIPFromHeader: false,
 	}
 	engine.RouteGroup.basePath = "/"
 	engine.RouteGroup.engine = engine
@@ -238,6 +242,14 @@ func (engine *Engine) HandleMethodNotAllowed(b bool) {
 	engine.handleMethodNotAllowed = b
 }
 
+// If enabled, the engine get client IP from http hearder X-Real-IP, X-Forwarded-For.
+//
+// Default is false.
+func (engine *Engine) FetchClientIPFromHeader(b bool) {
+	engine.startedChecker.check() // check if engine has been started.
+	engine.fetchClientIPFromHeader = b
+}
+
 // DefaultValidator sets the default Validator to validate object when binding.
 func (engine *Engine) DefaultValidator(v StructValidator) {
 	engine.startedChecker.check() // check if engine has been started.
@@ -281,6 +293,7 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx.ResponseWriter.reset(w)
 	ctx.Request = r
 	ctx.Validator = engine.defaultValidator
+	ctx.fetchClientIPFromHeader = engine.fetchClientIPFromHeader
 	engine.serveHTTP(ctx)
 
 	engine.contextPool.Put(ctx)

@@ -12,10 +12,12 @@ import (
 	"fmt"
 	"io"
 	"mime"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 	"unicode"
 
@@ -48,6 +50,8 @@ type Context struct {
 	// also you can change this in handlers.
 	Validator StructValidator
 
+	fetchClientIPFromHeader bool
+
 	handlers     HandlerChain
 	handlerIndex int
 
@@ -60,6 +64,7 @@ func (ctx *Context) reset() {
 	ctx.PathParams = ctx.pathParamsBuffer[:0]
 	ctx.queryParams = nil
 	ctx.Validator = nil
+	ctx.fetchClientIPFromHeader = false
 	ctx.handlers = nil
 	ctx.handlerIndex = __initHandlerIndex
 	ctx.kvs = nil
@@ -73,14 +78,15 @@ func (ctx *Context) Copy() *Context {
 		pathParams = append(pathParams, ctx.PathParams...)
 	}
 	return &Context{
-		ResponseWriter: nil,
-		Request:        ctx.Request,
-		PathParams:     pathParams,
-		queryParams:    ctx.queryParams,
-		Validator:      ctx.Validator,
-		handlers:       nil,
-		handlerIndex:   __abortHandlerIndex,
-		kvs:            ctx.kvs,
+		ResponseWriter:          nil,
+		Request:                 ctx.Request,
+		PathParams:              pathParams,
+		queryParams:             ctx.queryParams,
+		Validator:               ctx.Validator,
+		fetchClientIPFromHeader: ctx.fetchClientIPFromHeader,
+		handlers:                nil,
+		handlerIndex:            __abortHandlerIndex,
+		kvs:                     ctx.kvs,
 	}
 }
 
@@ -165,6 +171,30 @@ func (ctx *Context) MustGet(key string) interface{} {
 }
 
 // ================================ request ====================================
+
+func (ctx *Context) ClientIP() (ip string) {
+	if ctx.fetchClientIPFromHeader {
+		header := ctx.Request.Header
+		if ip = header.Get("X-Real-Ip"); ip != "" {
+			if ip = strings.TrimSpace(ip); ip != "" {
+				return ip
+			}
+		}
+		if ip = header.Get("X-Forwarded-For"); ip != "" {
+			if index := strings.IndexByte(ip, ','); index >= 0 {
+				ip = ip[:index]
+			}
+			if ip = strings.TrimSpace(ip); ip != "" {
+				return ip
+			}
+		}
+	}
+	ip, _, err := net.SplitHostPort(ctx.Request.RemoteAddr)
+	if err != nil {
+		return "unknown"
+	}
+	return ip
+}
 
 // Cookie is a shortcut for ctx.Request.Cookie(name).
 // It returns the named cookie provided in the request or http.ErrNoCookie if not found.

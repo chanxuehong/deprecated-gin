@@ -34,13 +34,42 @@ func handler(ctx *gin.Context) {
 func main() {
 	router := gin.New()
 
-	router.Get("/someGet", handler)
-	router.Post("/somePost", handler)
-	router.Put("/somePut", handler)
-	router.Delete("/someDelete", handler)
-	router.Patch("/somePatch", handler)
-	router.Head("/someHead", handler)
-	router.Options("/someOptions", handler)
+	router.Get("/get", handler)
+	router.Post("/post", handler)
+	router.Put("/put", handler)
+	router.Delete("/delete", handler)
+	router.Patch("/patch", handler)
+	router.Head("/head", handler)
+	router.Options("/options", handler)
+
+	// Listen and server on 0.0.0.0:8080
+	router.Run(":8080")
+}
+```
+
+```go
+package main
+
+import (
+	"github.com/chanxuehong/gin"
+	"github.com/chanxuehong/gin/middleware"
+)
+
+func handler(ctx *gin.Context) {
+	ctx.String(200, ctx.Request.Method)
+}
+
+func main() {
+	router := gin.New()
+	router.Use(middleware.Logger(), middleware.Recovery()) // use middleware
+
+	router.Get("/get", handler)
+	router.Post("/post", handler)
+	router.Put("/put", handler)
+	router.Delete("/delete", handler)
+	router.Patch("/patch", handler)
+	router.Head("/head", handler)
+	router.Options("/options", handler)
 
 	// Listen and server on 0.0.0.0:8080
 	router.Run(":8080")
