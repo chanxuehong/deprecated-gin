@@ -4,19 +4,23 @@
 
 package gin
 
+import (
+	"net/http"
+)
+
 // Common HTTP methods.
 //
 // Unless otherwise noted, these are defined in RFC 7231 section 4.3.
 const (
-	HTTPMethodGet     = "GET"
-	HTTPMethodHead    = "HEAD"
-	HTTPMethodPost    = "POST"
-	HTTPMethodPut     = "PUT"
-	HTTPMethodPatch   = "PATCH" // RFC 5741
-	HTTPMethodDelete  = "DELETE"
-	HTTPMethodConnect = "CONNECT"
-	HTTPMethodOptions = "OPTIONS"
-	HTTPMethodTrace   = "TRACE"
+	HTTPMethodGet     = http.MethodGet
+	HTTPMethodHead    = http.MethodHead
+	HTTPMethodPost    = http.MethodPost
+	HTTPMethodPut     = http.MethodPut
+	HTTPMethodPatch   = http.MethodPatch
+	HTTPMethodDelete  = http.MethodDelete
+	HTTPMethodConnect = http.MethodConnect
+	HTTPMethodOptions = http.MethodOptions
+	HTTPMethodTrace   = http.MethodTrace
 )
 
 // MIME types

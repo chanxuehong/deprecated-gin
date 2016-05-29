@@ -83,47 +83,47 @@ func (group *RouteGroup) Any(relativePath string, handlers ...HandlerFunc) {
 
 // Get is a shortcut for group.Handle("GET", relativePath, handlers)
 func (group *RouteGroup) Get(relativePath string, handlers ...HandlerFunc) {
-	group.handle(HTTPMethodGet, relativePath, handlers)
+	group.handle(http.MethodGet, relativePath, handlers)
 }
 
 // Head is a shortcut for group.Handle("HEAD", relativePath, handlers)
 func (group *RouteGroup) Head(relativePath string, handlers ...HandlerFunc) {
-	group.handle(HTTPMethodHead, relativePath, handlers)
+	group.handle(http.MethodHead, relativePath, handlers)
 }
 
 // Post is a shortcut for group.Handle("POST", relativePath, handlers)
 func (group *RouteGroup) Post(relativePath string, handlers ...HandlerFunc) {
-	group.handle(HTTPMethodPost, relativePath, handlers)
+	group.handle(http.MethodPost, relativePath, handlers)
 }
 
 // Put is a shortcut for group.Handle("PUT", relativePath, handlers)
 func (group *RouteGroup) Put(relativePath string, handlers ...HandlerFunc) {
-	group.handle(HTTPMethodPut, relativePath, handlers)
+	group.handle(http.MethodPut, relativePath, handlers)
 }
 
 // Patch is a shortcut for group.Handle("PATCH", relativePath, handlers)
 func (group *RouteGroup) Patch(relativePath string, handlers ...HandlerFunc) {
-	group.handle(HTTPMethodPatch, relativePath, handlers)
+	group.handle(http.MethodPatch, relativePath, handlers)
 }
 
 // Delete is a shortcut for group.Handle("DELETE", relativePath, handlers)
 func (group *RouteGroup) Delete(relativePath string, handlers ...HandlerFunc) {
-	group.handle(HTTPMethodDelete, relativePath, handlers)
+	group.handle(http.MethodDelete, relativePath, handlers)
 }
 
 // Connect is a shortcut for group.Handle("CONNECT", relativePath, handlers)
 func (group *RouteGroup) Connect(relativePath string, handlers ...HandlerFunc) {
-	group.handle(HTTPMethodConnect, relativePath, handlers)
+	group.handle(http.MethodConnect, relativePath, handlers)
 }
 
 // Options is a shortcut for group.Handle("OPTIONS", relativePath, handlers)
 func (group *RouteGroup) Options(relativePath string, handlers ...HandlerFunc) {
-	group.handle(HTTPMethodOptions, relativePath, handlers)
+	group.handle(http.MethodOptions, relativePath, handlers)
 }
 
 // Trace is a shortcut for group.Handle("TRACE", relativePath, handlers)
 func (group *RouteGroup) Trace(relativePath string, handlers ...HandlerFunc) {
-	group.handle(HTTPMethodTrace, relativePath, handlers)
+	group.handle(http.MethodTrace, relativePath, handlers)
 }
 
 // StaticFile registers a single route in order to serve a single file of the local filesystem.

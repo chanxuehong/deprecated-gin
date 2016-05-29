@@ -24,15 +24,15 @@ func (chain HandlerChain) last() HandlerFunc {
 }
 
 var __httpMethods = [...]string{
-	HTTPMethodGet,
-	HTTPMethodHead,
-	HTTPMethodPost,
-	HTTPMethodPut,
-	HTTPMethodPatch,
-	HTTPMethodDelete,
-	HTTPMethodConnect,
-	HTTPMethodOptions,
-	HTTPMethodTrace,
+	http.MethodGet,
+	http.MethodHead,
+	http.MethodPost,
+	http.MethodPut,
+	http.MethodPatch,
+	http.MethodDelete,
+	http.MethodConnect,
+	http.MethodOptions,
+	http.MethodTrace,
 }
 
 var _ http.Handler = (*Engine)(nil)
@@ -314,7 +314,7 @@ func (engine *Engine) serveHTTP(ctx *Context) {
 			ctx.Next()
 			return
 		}
-		if httpMethod != HTTPMethodConnect && path != "/" {
+		if httpMethod != http.MethodConnect && path != "/" {
 			if tsr && engine.redirectTrailingSlash {
 				redirectTrailingSlash(ctx)
 				return
@@ -366,7 +366,7 @@ func redirectTrailingSlash(ctx *Context) {
 	path := req.URL.Path // path != "/"
 
 	code := 301
-	if req.Method != HTTPMethodGet {
+	if req.Method != http.MethodGet {
 		code = 307
 	}
 
@@ -387,7 +387,7 @@ func redirectFixedPath(ctx *Context, root *node, fixTrailingSlash bool) bool {
 	fixedPath, found := root.findCaseInsensitivePath(pathClean(path), fixTrailingSlash)
 	if found {
 		code := 301
-		if req.Method != HTTPMethodGet {
+		if req.Method != http.MethodGet {
 			code = 307
 		}
 		req.URL.Path = string(fixedPath)

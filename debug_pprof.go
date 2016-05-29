@@ -5,20 +5,18 @@
 package gin
 
 import (
-	"net/http"
-
 	"github.com/chanxuehong/gin/pprof"
 )
 
-// EnablePProf adds "/debug/pprof/*name" to router, for more information please see net/http/pprof.
-//
-// Please NOTE that EnablePProf without using any middleware inside Engine.
-func (engine *Engine) EnablePProf() {
-	engine.addRoute(http.MethodGet, "/debug/pprof/*name", HandlerChain{pprofHandlerFunc})
+// EnableDebugPProf adds internal HandlerFunc and current middlewares of Engine to process path "/debug/pprof/*name",
+// for more information please see net/http/pprof.
+func (engine *Engine) EnableDebugPProf() {
+	engine.Any("/debug/pprof/*name", debugPProfHandlerFunc)
 }
 
-func pprofHandlerFunc(ctx *Context) {
-	switch path := ctx.Request.URL.Path; path {
+func debugPProfHandlerFunc(ctx *Context) {
+	path := ctx.Request.URL.Path
+	switch path {
 	default:
 		pprof.Index(ctx.ResponseWriter, ctx.Request)
 	case "/debug/pprof/cmdline":
