@@ -5,6 +5,11 @@ import (
 	"net/http"
 )
 
+var _ ResponseWriter = (*responseWriter01011)(nil)
+var _ stringWriter = (*responseWriter01011)(nil)
+var _ http.Hijacker = (*responseWriter01011)(nil)
+var _ http.CloseNotifier = (*responseWriter01011)(nil)
+
 type responseWriter01011 struct {
 	responseWriter00011
 }

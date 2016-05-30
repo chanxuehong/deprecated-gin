@@ -4,6 +4,9 @@ import (
 	"net/http"
 )
 
+var _ ResponseWriter = (*responseWriter00001)(nil)
+var _ http.CloseNotifier = (*responseWriter00001)(nil)
+
 type responseWriter00001 struct {
 	responseWriter00000
 }

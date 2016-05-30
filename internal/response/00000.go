@@ -5,6 +5,8 @@ import (
 	"net/http"
 )
 
+var _ ResponseWriter = (*responseWriter00000)(nil)
+
 type responseWriter00000 struct {
 	responseWriter http.ResponseWriter
 	wroteHeader    bool  // reply header has been (logically) written

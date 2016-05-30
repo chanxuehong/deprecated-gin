@@ -28,6 +28,8 @@ func (arr *ResponseWriterArray) ResponseWriter(w http.ResponseWriter) ResponseWr
 
 func newResponseWriter(bitmap int) ResponseWriter {
 	switch bitmap {
+	default:
+		return new(responseWriter00000)
 	case 0x1f:
 		return new(responseWriter11111)
 	case 0x00:
@@ -92,7 +94,5 @@ func newResponseWriter(bitmap int) ResponseWriter {
 		return new(responseWriter11101)
 	case 0x1e:
 		return new(responseWriter11110)
-	default:
-		return new(responseWriter00000)
 	}
 }

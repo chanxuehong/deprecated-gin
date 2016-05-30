@@ -5,6 +5,12 @@ import (
 	"net/http"
 )
 
+var _ ResponseWriter = (*responseWriter11110)(nil)
+var _ io.ReaderFrom = (*responseWriter11110)(nil)
+var _ stringWriter = (*responseWriter11110)(nil)
+var _ http.Flusher = (*responseWriter11110)(nil)
+var _ http.Hijacker = (*responseWriter11110)(nil)
+
 type responseWriter11110 struct {
 	responseWriter01110
 }

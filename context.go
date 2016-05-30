@@ -44,7 +44,7 @@ type ResponseWriter interface {
 //  Context and the ResponseWriter, PathParams fields of Context
 //  can NOT be safely used outside the request's scope, see Context.Copy().
 type Context struct {
-	responseWriterArray response.ResponseWriterArray
+	responseWriterArray response.ResponseWriterArray // cache pre-allocate ResponseWriter
 	ResponseWriter      ResponseWriter
 	Request             *http.Request
 
@@ -69,7 +69,7 @@ type Context struct {
 func (ctx *Context) reset() {
 	ctx.ResponseWriter = nil
 	ctx.Request = nil
-	ctx.PathParams = ctx.pathParamsBuffer[:0]
+	ctx.PathParams = nil
 	ctx.queryParams = nil
 	ctx.Validator = nil
 	ctx.fetchClientIPFromHeader = false

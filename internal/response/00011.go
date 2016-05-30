@@ -7,6 +7,10 @@ import (
 	"net/http"
 )
 
+var _ ResponseWriter = (*responseWriter00011)(nil)
+var _ http.Hijacker = (*responseWriter00011)(nil)
+var _ http.CloseNotifier = (*responseWriter00011)(nil)
+
 type responseWriter00011 struct {
 	responseWriter00001
 	hijacked bool

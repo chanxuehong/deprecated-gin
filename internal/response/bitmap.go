@@ -1,7 +1,6 @@
 package response
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"reflect"
@@ -16,7 +15,7 @@ const (
 	stringWriterBitmap      = 1 << 3 // stringWriter
 	httpFlusherBitmap       = 1 << 2 // http.Flusher
 	httpHijackerBitmap      = 1 << 1 // http.Hijacker
-	httpCloseNotifierBitmap = 1      // http.CloseNotifier
+	httpCloseNotifierBitmap = 1 << 0 // http.CloseNotifier
 )
 
 // stringWriter is the interface that wraps the WriteString method.
@@ -24,9 +23,9 @@ type stringWriter interface {
 	WriteString(s string) (n int, err error)
 }
 
-func bitmap(w http.ResponseWriter) int {
+func bitmap(v interface{}) int {
 	// get bitmap from cache
-	typ := reflect.TypeOf(w)
+	typ := reflect.TypeOf(v)
 	bitmapCachePtr := (*map[reflect.Type]int)(atomic.LoadPointer(&__bitmapCache))
 	if bitmapCachePtr != nil {
 		bitmapCache := *bitmapCachePtr
@@ -35,40 +34,40 @@ func bitmap(w http.ResponseWriter) int {
 		}
 	}
 
+	// cache miss
+	n := 0
 	var ok bool
-	n := 0x00
-	if _, ok = w.(io.ReaderFrom); ok {
+	if _, ok = v.(io.ReaderFrom); ok {
 		n |= ioReaderFromBitmap
 	}
-	if _, ok = w.(stringWriter); ok {
+	if _, ok = v.(stringWriter); ok {
 		n |= stringWriterBitmap
 	}
-	if _, ok = w.(http.Flusher); ok {
+	if _, ok = v.(http.Flusher); ok {
 		n |= httpFlusherBitmap
 	}
-	if _, ok = w.(http.Hijacker); ok {
+	if _, ok = v.(http.Hijacker); ok {
 		n |= httpHijackerBitmap
 	}
-	if _, ok = w.(http.CloseNotifier); ok {
+	if _, ok = v.(http.CloseNotifier); ok {
 		n |= httpCloseNotifierBitmap
 	}
 
-	fmt.Println("match", n)
-
 	// save bitmap to cache
 	__bitmapCacheLock.Lock()
-	var newBitmapCache map[reflect.Type]int
 	if bitmapCachePtr != nil {
 		bitmapCache := *bitmapCachePtr
-		newBitmapCache = make(map[reflect.Type]int, len(bitmapCache)+1)
+		newBitmapCache := make(map[reflect.Type]int, len(bitmapCache)+1)
 		for k, v := range bitmapCache {
 			newBitmapCache[k] = v
 		}
+		newBitmapCache[typ] = n
+		atomic.StorePointer(&__bitmapCache, unsafe.Pointer(&newBitmapCache))
 	} else {
-		newBitmapCache = make(map[reflect.Type]int, 1)
+		newBitmapCache := make(map[reflect.Type]int, 1)
+		newBitmapCache[typ] = n
+		atomic.StorePointer(&__bitmapCache, unsafe.Pointer(&newBitmapCache))
 	}
-	newBitmapCache[typ] = n
-	atomic.StorePointer(&__bitmapCache, unsafe.Pointer(&newBitmapCache))
 	__bitmapCacheLock.Unlock()
 
 	return n

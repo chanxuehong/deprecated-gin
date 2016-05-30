@@ -292,6 +292,7 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx.reset()
 	ctx.ResponseWriter = ctx.responseWriterArray.ResponseWriter(w)
 	ctx.Request = r
+	ctx.PathParams = ctx.pathParamsBuffer[:0]
 	ctx.Validator = engine.defaultValidator
 	ctx.fetchClientIPFromHeader = engine.fetchClientIPFromHeader
 	engine.serveHTTP(ctx)

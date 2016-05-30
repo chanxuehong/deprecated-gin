@@ -4,6 +4,9 @@ import (
 	"net/http"
 )
 
+var _ ResponseWriter = (*responseWriter01000)(nil)
+var _ stringWriter = (*responseWriter01000)(nil)
+
 type responseWriter01000 struct {
 	responseWriter00000
 }
