@@ -7,7 +7,7 @@ import (
 
 type responseWriter00000 struct {
 	responseWriter http.ResponseWriter
-	wroteHeader    bool  // reply header has been written
+	wroteHeader    bool  // reply header has been (logically) written
 	status         int   // status code passed to WriteHeader
 	written        int64 // number of bytes written in body
 }
