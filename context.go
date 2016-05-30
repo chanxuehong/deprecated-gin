@@ -66,13 +66,13 @@ type Context struct {
 	kvs map[string]interface{}
 }
 
-func (ctx *Context) reset() {
-	ctx.ResponseWriter = nil
-	ctx.Request = nil
-	ctx.PathParams = nil
+func (ctx *Context) reset(w http.ResponseWriter, r *http.Request, validator StructValidator, fetchClientIPFromHeader bool) {
+	ctx.ResponseWriter = ctx.responseWriterArray.ResponseWriter(w)
+	ctx.Request = r
+	ctx.PathParams = ctx.pathParamsBuffer[:0]
 	ctx.queryParams = nil
-	ctx.Validator = nil
-	ctx.fetchClientIPFromHeader = false
+	ctx.Validator = validator
+	ctx.fetchClientIPFromHeader = fetchClientIPFromHeader
 	ctx.handlers = nil
 	ctx.handlerIndex = __initHandlerIndex
 	ctx.kvs = nil
