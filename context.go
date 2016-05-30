@@ -22,12 +22,20 @@ import (
 	"unicode"
 
 	"github.com/chanxuehong/gin/binder"
+	"github.com/chanxuehong/gin/internal/response"
 )
 
 const (
 	__initHandlerIndex  = -1
 	__abortHandlerIndex = __maxHandlerChainSize
 )
+
+type ResponseWriter interface {
+	http.ResponseWriter
+	WroteHeader() bool // WroteHeader returns true if header has been written, otherwise false.
+	Status() int       // Status returns the response status code of the current request.
+	Written() int64    // Written returns number of bytes written in body.
+}
 
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
@@ -36,9 +44,9 @@ const (
 //  Context and the ResponseWriter, PathParams fields of Context
 //  can NOT be safely used outside the request's scope, see Context.Copy().
 type Context struct {
-	responseWriter responseWriter // Context.ResponseWriter points to this
-	ResponseWriter ResponseWriter
-	Request        *http.Request
+	responseWriterArray response.ResponseWriterArray
+	ResponseWriter      ResponseWriter
+	Request             *http.Request
 
 	pathParamsBuffer [8]Param // Context.PathParams points to this
 	PathParams       Params
@@ -59,7 +67,7 @@ type Context struct {
 }
 
 func (ctx *Context) reset() {
-	ctx.ResponseWriter = &ctx.responseWriter
+	ctx.ResponseWriter = nil
 	ctx.Request = nil
 	ctx.PathParams = ctx.pathParamsBuffer[:0]
 	ctx.queryParams = nil
