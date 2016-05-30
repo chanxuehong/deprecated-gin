@@ -290,7 +290,7 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := engine.contextPool.Get().(*Context)
 
 	ctx.reset()
-	ctx.ResponseWriter.reset(w)
+	ctx.responseWriter.reset(w)
 	ctx.Request = r
 	ctx.Validator = engine.defaultValidator
 	ctx.fetchClientIPFromHeader = engine.fetchClientIPFromHeader

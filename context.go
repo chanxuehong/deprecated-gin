@@ -36,8 +36,8 @@ const (
 //  Context and the ResponseWriter, PathParams fields of Context
 //  can NOT be safely used outside the request's scope, see Context.Copy().
 type Context struct {
-	responseWriter ResponseWriter // Context.ResponseWriter points to this
-	ResponseWriter *ResponseWriter
+	responseWriter responseWriter // Context.ResponseWriter points to this
+	ResponseWriter ResponseWriter
 	Request        *http.Request
 
 	pathParamsBuffer [8]Param // Context.PathParams points to this
@@ -317,7 +317,7 @@ func (ctx *Context) String(code int, format string, values ...interface{}) (err 
 	if len(values) > 0 {
 		_, err = fmt.Fprintf(w, format, values...)
 	} else {
-		_, err = w.WriteString(format)
+		_, err = io.WriteString(w, format)
 	}
 	return
 }
@@ -361,7 +361,7 @@ func (ctx *Context) XML(code int, obj interface{}) (err error) {
 	w := ctx.ResponseWriter
 	w.Header().Set(HeaderContentType, MIMEApplicationXMLCharsetUTF8)
 	w.WriteHeader(code)
-	if _, err = w.WriteString(xml.Header); err != nil {
+	if _, err = io.WriteString(w, xml.Header); err != nil {
 		return
 	}
 	return xml.NewEncoder(w).Encode(obj)
@@ -373,7 +373,7 @@ func (ctx *Context) XMLIndent(code int, obj interface{}, prefix string, indent s
 	w := ctx.ResponseWriter
 	w.Header().Set(HeaderContentType, MIMEApplicationXMLCharsetUTF8)
 	w.WriteHeader(code)
-	if _, err = w.WriteString(xml.Header); err != nil {
+	if _, err = io.WriteString(w, xml.Header); err != nil {
 		return
 	}
 	encoder := xml.NewEncoder(w)
@@ -390,7 +390,7 @@ func (ctx *Context) XMLBlob(code int, blob []byte) (err error) {
 	w.Header().Set(HeaderContentType, MIMEApplicationXMLCharsetUTF8)
 	w.WriteHeader(code)
 	if !bytes.HasPrefix(bytes.TrimLeftFunc(blob, unicode.IsSpace), __xmlHeaderPrefix) {
-		if _, err = w.WriteString(xml.Header); err != nil {
+		if _, err = io.WriteString(w, xml.Header); err != nil {
 			return
 		}
 	}
@@ -441,7 +441,7 @@ func (ctx *Context) Attachment(content io.Reader, filename string) (err error) {
 	w := ctx.ResponseWriter
 	w.Header().Set(HeaderContentType, contentTypeFromName(filename))
 	w.Header().Set(HeaderContentDisposition, `attachment;filename="`+url.QueryEscape(filename)+`"`)
-	_, err = w.ReadFrom(content)
+	_, err = io.Copy(w, content)
 	return
 }
 
