@@ -7,8 +7,6 @@ package gin
 import (
 	"net/http"
 	"sync"
-
-	"github.com/chanxuehong/gin/internal/response"
 )
 
 const __maxHandlerChainSize = 64
@@ -111,11 +109,7 @@ func New() *Engine {
 	return engine
 }
 
-func contextPoolNew() interface{} {
-	return &Context{
-		responseWriterArray: response.NewResponseWriterArray(),
-	}
-}
+func contextPoolNew() interface{} { return new(Context) }
 
 func (engine *Engine) addRoute(method, path string, handlers HandlerChain) {
 	if method == "" {
@@ -296,7 +290,7 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := engine.contextPool.Get().(*Context)
 
 	ctx.reset()
-	ctx.ResponseWriter = ctx.responseWriterArray.SelectResponseWriter(w)
+	ctx.ResponseWriter = ctx.responseWriterArray.ResponseWriter(w)
 	ctx.Request = r
 	ctx.Validator = engine.defaultValidator
 	ctx.fetchClientIPFromHeader = engine.fetchClientIPFromHeader
