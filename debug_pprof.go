@@ -8,13 +8,23 @@ import (
 	"github.com/chanxuehong/gin/pprof"
 )
 
-// EnableDebugPProf adds internal HandlerFunc and current middlewares of Engine to process path "/debug/pprof/*name",
-// for more information please see net/http/pprof.
-func (engine *Engine) EnableDebugPProf() {
-	engine.Any("/debug/pprof/*name", debugPProfHandlerFunc)
+// DebugPProf registers internal HandlerFunc to process path "/debug/pprof/*name", for more information please see net/http/pprof.
+//
+// Please NOTE that DebugPProf does not use any middleware of Engine, you can specify middlewares optionally when you call this method.
+func (engine *Engine) DebugPProf(middleware ...HandlerFunc) {
+	for _, h := range middleware {
+		if h == nil {
+			panic("each middleware can not be nil")
+		}
+	}
+	engine.startedChecker.check() // check if engine has been started.
+	handlers := combineHandlerChain(middleware, HandlerChain{debugPProfHandler})
+	for _, method := range __httpMethods {
+		engine.addRoute(method, "/debug/pprof/*name", handlers)
+	}
 }
 
-func debugPProfHandlerFunc(ctx *Context) {
+func debugPProfHandler(ctx *Context) {
 	path := ctx.Request.URL.Path
 	switch path {
 	default:
