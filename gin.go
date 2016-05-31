@@ -109,7 +109,11 @@ func New() *Engine {
 	return engine
 }
 
-func contextPoolNew() interface{} { return new(Context) }
+func contextPoolNew() interface{} {
+	var ctx Context
+	ctx.reset()
+	return &ctx
+}
 
 func (engine *Engine) addRoute(method, path string, handlers HandlerChain) {
 	if method == "" {
@@ -289,9 +293,15 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	engine.startedChecker.start()
 	ctx := engine.contextPool.Get().(*Context)
 
-	ctx.reset(w, r, engine.defaultValidator, engine.fetchClientIPFromHeader)
+	ctx.responseWriter2 = ctx.responseWriterCache.ResponseWriter2(w)
+	ctx.ResponseWriter = ctx.responseWriter2
+	ctx.Request = r
+	ctx.PathParams = ctx.pathParamsBuffer[:0]
+	ctx.Validator = engine.defaultValidator
+	ctx.fetchClientIPFromHeader = engine.fetchClientIPFromHeader
 	engine.serveHTTP(ctx)
 
+	ctx.reset()
 	engine.contextPool.Put(ctx)
 }
 

@@ -18,13 +18,13 @@ import (
 // }
 type ResponseWriter response.ResponseWriter
 
-type responseWriterCache [32]response.ResponseWriter2
+type responseWriterArray [32]response.ResponseWriter2
 
-func (cache *responseWriterCache) ResponseWriter(w http.ResponseWriter) ResponseWriter {
+func (cache *responseWriterArray) ResponseWriter2(w http.ResponseWriter) response.ResponseWriter2 {
 	index := response.Bitmap(w)
 	resp := cache[index]
 	if resp == nil {
-		resp = response.NewResponseWriter(index)
+		resp = response.NewResponseWriter2(index)
 		cache[index] = resp
 	}
 	resp.Reset(w)

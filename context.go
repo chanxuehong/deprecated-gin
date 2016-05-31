@@ -22,6 +22,7 @@ import (
 	"unicode"
 
 	"github.com/chanxuehong/gin/binder"
+	"github.com/chanxuehong/gin/internal/response"
 )
 
 const (
@@ -36,8 +37,9 @@ const (
 //  Context and the ResponseWriter, PathParams fields of Context
 //  can NOT be safely used outside the request's scope, see Context.Copy().
 type Context struct {
-	responseWriterCache responseWriterCache // cache pre-allocate ResponseWriter
-	ResponseWriter      ResponseWriter
+	responseWriterCache responseWriterArray // cache pre-allocate response.ResponseWriter2
+	responseWriter2     response.ResponseWriter2
+	ResponseWriter      ResponseWriter // convert from Context.responseWriter2
 	Request             *http.Request
 
 	pathParamsBuffer [8]Param // Context.PathParams points to this
@@ -58,13 +60,17 @@ type Context struct {
 	kvs map[string]interface{}
 }
 
-func (ctx *Context) reset(w http.ResponseWriter, r *http.Request, validator StructValidator, fetchClientIPFromHeader bool) {
-	ctx.ResponseWriter = ctx.responseWriterCache.ResponseWriter(w)
-	ctx.Request = r
-	ctx.PathParams = ctx.pathParamsBuffer[:0]
+func (ctx *Context) reset() {
+	if ctx.responseWriter2 != nil {
+		ctx.responseWriter2.Reset(nil)
+		ctx.responseWriter2 = nil
+	}
+	ctx.ResponseWriter = nil
+	ctx.Request = nil
+	ctx.PathParams = nil
 	ctx.queryParams = nil
-	ctx.Validator = validator
-	ctx.fetchClientIPFromHeader = fetchClientIPFromHeader
+	ctx.Validator = nil
+	ctx.fetchClientIPFromHeader = false
 	ctx.handlers = nil
 	ctx.handlerIndex = __initHandlerIndex
 	ctx.kvs = nil
@@ -78,6 +84,7 @@ func (ctx *Context) Copy() *Context {
 		pathParams = append(pathParams, ctx.PathParams...)
 	}
 	return &Context{
+		responseWriter2:         nil,
 		ResponseWriter:          nil,
 		Request:                 ctx.Request,
 		PathParams:              pathParams,
