@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-var _ ResponseWriter = (*responseWriter00000)(nil)
+func newResponseWriter00000() ResponseWriter2 { return new(responseWriter00000) }
 
 type responseWriter00000 struct {
 	responseWriter http.ResponseWriter
@@ -14,7 +14,7 @@ type responseWriter00000 struct {
 	written        int64 // number of bytes written in body
 }
 
-func (w *responseWriter00000) reset(writer http.ResponseWriter) {
+func (w *responseWriter00000) Reset(writer http.ResponseWriter) {
 	w.responseWriter = writer
 	w.wroteHeader = false
 	w.status = http.StatusOK

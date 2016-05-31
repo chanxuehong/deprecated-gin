@@ -4,7 +4,8 @@ import (
 	"net/http"
 )
 
-var _ ResponseWriter = (*responseWriter01001)(nil)
+func newResponseWriter01001() ResponseWriter2 { return new(responseWriter01001) }
+
 var _ stringWriter = (*responseWriter01001)(nil)
 var _ http.CloseNotifier = (*responseWriter01001)(nil)
 

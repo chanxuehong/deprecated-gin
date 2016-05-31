@@ -7,7 +7,8 @@ import (
 	"net/http"
 )
 
-var _ ResponseWriter = (*responseWriter00010)(nil)
+func newResponseWriter00010() ResponseWriter2 { return new(responseWriter00010) }
+
 var _ http.Hijacker = (*responseWriter00010)(nil)
 
 type responseWriter00010 struct {
@@ -15,8 +16,8 @@ type responseWriter00010 struct {
 	hijacked bool
 }
 
-func (w *responseWriter00010) reset(writer http.ResponseWriter) {
-	w.responseWriter00000.reset(writer)
+func (w *responseWriter00010) Reset(writer http.ResponseWriter) {
+	w.responseWriter00000.Reset(writer)
 	w.hijacked = false
 }
 

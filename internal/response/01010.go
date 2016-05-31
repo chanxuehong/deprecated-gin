@@ -5,7 +5,8 @@ import (
 	"net/http"
 )
 
-var _ ResponseWriter = (*responseWriter01010)(nil)
+func newResponseWriter01010() ResponseWriter2 { return new(responseWriter01010) }
+
 var _ stringWriter = (*responseWriter01010)(nil)
 var _ http.Hijacker = (*responseWriter01010)(nil)
 

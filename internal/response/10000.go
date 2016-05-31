@@ -5,7 +5,8 @@ import (
 	"net/http"
 )
 
-var _ ResponseWriter = (*responseWriter10000)(nil)
+func newResponseWriter10000() ResponseWriter2 { return new(responseWriter10000) }
+
 var _ io.ReaderFrom = (*responseWriter10000)(nil)
 
 type responseWriter10000 struct {

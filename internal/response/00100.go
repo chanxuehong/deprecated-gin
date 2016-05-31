@@ -4,7 +4,8 @@ import (
 	"net/http"
 )
 
-var _ ResponseWriter = (*responseWriter00100)(nil)
+func newResponseWriter00100() ResponseWriter2 { return new(responseWriter00100) }
+
 var _ http.Flusher = (*responseWriter00100)(nil)
 
 type responseWriter00100 struct {

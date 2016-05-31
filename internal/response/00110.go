@@ -4,7 +4,8 @@ import (
 	"net/http"
 )
 
-var _ ResponseWriter = (*responseWriter00110)(nil)
+func newResponseWriter00110() ResponseWriter2 { return new(responseWriter00110) }
+
 var _ http.Flusher = (*responseWriter00110)(nil)
 var _ http.Hijacker = (*responseWriter00110)(nil)
 

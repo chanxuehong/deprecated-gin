@@ -23,9 +23,12 @@ type stringWriter interface {
 	WriteString(s string) (n int, err error)
 }
 
-func bitmap(v interface{}) int {
+// Bitmap returns the bitmap of http.ResponseWriter.
+//
+// bitmap = (io.ReaderFrom, stringWriter, http.Flusher, http.Hijacker, http.CloseNotifier)
+func Bitmap(w http.ResponseWriter) int {
 	// get bitmap from cache
-	typ := reflect.TypeOf(v)
+	typ := reflect.TypeOf(w)
 	bitmapCachePtr := (*map[reflect.Type]int)(atomic.LoadPointer(&__bitmapCache))
 	if bitmapCachePtr != nil {
 		bitmapCache := *bitmapCachePtr
@@ -34,26 +37,26 @@ func bitmap(v interface{}) int {
 		}
 	}
 
-	// cache miss
+	// cache miss, calculate the bitmap
 	n := 0
 	var ok bool
-	if _, ok = v.(io.ReaderFrom); ok {
+	if _, ok = w.(io.ReaderFrom); ok {
 		n |= ioReaderFromBitmap
 	}
-	if _, ok = v.(stringWriter); ok {
+	if _, ok = w.(stringWriter); ok {
 		n |= stringWriterBitmap
 	}
-	if _, ok = v.(http.Flusher); ok {
+	if _, ok = w.(http.Flusher); ok {
 		n |= httpFlusherBitmap
 	}
-	if _, ok = v.(http.Hijacker); ok {
+	if _, ok = w.(http.Hijacker); ok {
 		n |= httpHijackerBitmap
 	}
-	if _, ok = v.(http.CloseNotifier); ok {
+	if _, ok = w.(http.CloseNotifier); ok {
 		n |= httpCloseNotifierBitmap
 	}
 
-	// save bitmap to cache
+	// save bitmap to cache, cow
 	__bitmapCacheLock.Lock()
 	if bitmapCachePtr != nil {
 		bitmapCache := *bitmapCachePtr
