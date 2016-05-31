@@ -201,11 +201,13 @@ func combineHandlerChain(middlewares, handlers HandlerChain) HandlerChain {
 	if len(handlers) == 0 {
 		return middlewares
 	}
-	// middlewares is canonical, since it was returned by combineHandlerChain.
 	for _, h := range handlers {
 		if h == nil {
 			panic("handler can not be nil")
 		}
+	}
+	if len(middlewares) == 0 {
+		return handlers
 	}
 	if size := len(middlewares) + len(handlers); size > __maxHandlerChainSize {
 		panic("too many handlers")
