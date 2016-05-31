@@ -24,7 +24,7 @@ func (cache *responseWriterCache) ResponseWriter(w http.ResponseWriter) Response
 	index := response.Bitmap(w)
 	resp := cache[index]
 	if resp == nil {
-		resp = response.NewResponseWriter(w)
+		resp = response.NewResponseWriter(index)
 		cache[index] = resp
 	}
 	resp.Reset(w)

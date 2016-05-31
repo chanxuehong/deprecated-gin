@@ -16,9 +16,8 @@ type ResponseWriter2 interface {
 	Reset(w http.ResponseWriter)
 }
 
-func NewResponseWriter(w http.ResponseWriter) ResponseWriter2 {
-	index := Bitmap(w)
-	newResponseWriterFunc := __newResponseWriterFuncArray[index]
+func NewResponseWriter(bitmap int) ResponseWriter2 {
+	newResponseWriterFunc := __newResponseWriterFuncArray[bitmap]
 	return newResponseWriterFunc()
 }
 
